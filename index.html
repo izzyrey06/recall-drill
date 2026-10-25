@@ -147,6 +147,9 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 .round:hover:not(:disabled){border-color:var(--accent)}
 .round:disabled{opacity:.35;cursor:default}
 .round.bad{color:var(--bad);border-color:var(--bad)} .round.good{color:var(--good);border-color:var(--good)}
+.round.wide{width:auto;min-width:60px;padding:0 16px;display:flex;gap:6px;align-items:center;justify-content:center}
+.round small{font-family:var(--mono);font-size:.78rem;font-weight:500}
+.srs-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .switch{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;cursor:pointer}
 .switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .2s}
 .switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .2s}
@@ -234,11 +237,13 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
     </div>
 
     <div class="fc-options">
+      <label class="switch" title="Only show cards that are due, and space out the ones you know"><input type="checkbox" id="srsT"> Spaced repetition</label>
+      <label id="srsNewWrap" hidden>New cards per day <select id="srsNew"><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="0">All</option></select></label>
       <label for="fcFront">Show first <select id="fcFront"><option value="term">Term</option><option value="def">Definition</option></select></label>
       <label><input type="checkbox" id="fcStarred"> <span id="fcStarredLbl">Starred only</span></label>
       <button class="link" id="fcRestart">Restart flashcards</button>
     </div>
-    <p class="hint">Space flips. Arrows move between cards, or sort them when tracking progress. Z undoes. In track mode you can also drag the card left or right.</p>
+    <p class="hint">Space flips. Arrows move between cards, or sort them when tracking progress. Z undoes. When sorting you can also drag the card left or right. With spaced repetition on, ✓ pushes a card further out and ✕ brings it back soon.</p>
   </section>
 
   <section class="view" id="learnView" hidden>
@@ -512,27 +517,57 @@ const F = ()=>S.fc;
 let autoTimer=null, drag=null;
 
 function ensureFc(force){
-  if(!S.fc || force){ S.fc = Object.assign({front:"term",shuffle:false,starredOnly:false,track:false}, force?{front:S.fc?.front||"term",shuffle:S.fc?.shuffle||false,track:S.fc?.track||false}:{}); fcBuild(); return; }
+  if(!S.fc || force){ const o=S.fc||{}; S.fc = Object.assign({front:"term",shuffle:false,starredOnly:false,track:false,srs:false,newPerDay:20}, force?{front:o.front||"term",shuffle:!!o.shuffle,track:!!o.track,srs:!!o.srs,newPerDay:o.newPerDay??20,newDay:o.newDay,newCount:o.newCount}:{}); fcBuild(); return; }
+  if(S.fc.newPerDay===undefined) S.fc.newPerDay=20;
   S.fc.order = (S.fc.order||[]).filter(id=>S.cards[id]);
-  if(!S.fc.order.length) fcBuild();
+  if(S.fc.srs && !S.fc.cram && S.fc.builtDay!==dayStart(Date.now())) fcBuild();
+  else if(!S.fc.order.length && !S.fc.srs) fcBuild();
 }
-function fcBuild(){
-  const f=F(); let ids=S.cards.filter(c=>!f.starredOnly||c.star).map(c=>c.id);
-  if(!ids.length){ ids=S.cards.map(c=>c.id); f.starredOnly=false; }
-  if(f.shuffle) shuffle(ids);
-  Object.assign(f,{order:ids,i:0,flipped:false,known:[],learning:[],history:[],round:1,total:ids.length});
+
+/* Spaced repetition: each card gets a due date. ✓ spaces it out (1 day, 3 days, then growing), ✕ brings it back this session. */
+const DAY=864e5;
+function dayStart(t){ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+const sorting=f=>f.track||f.srs;
+const scheduling=f=>f.srs&&!f.cram;
+function nextIvl(c){ const r=c.srs; if(!r||!r.reps) return 1; if(r.reps===1) return 3; return Math.max(r.ivl+1, Math.round(r.ivl*r.ease)); }
+function schedule(c,known){
+  const r=c.srs||{ivl:0,ease:2.5,reps:0,lapses:0,due:0};
+  if(known){ r.ivl=nextIvl(c); r.reps++; r.ease=Math.min(3,r.ease+0.05); r.due=dayStart(Date.now())+r.ivl*DAY; }
+  else { if(r.reps) r.lapses++; r.reps=0; r.ivl=0; r.ease=Math.max(1.3,r.ease-0.2); r.due=Date.now(); }
+  r.last=Date.now(); c.srs=r;
+}
+function ivlText(d){ return d<=1?"1 day":d<30?d+" days":d<365?Math.round(d/30)+" mo":Math.round(d/365*10)/10+" yr"; }
+function whenText(t){ const days=Math.round((dayStart(t)-dayStart(Date.now()))/DAY); return days<=0?"later today":days===1?"tomorrow":days<7?"in "+days+" days":new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+function newLeftToday(f){ if(!f.newPerDay) return Infinity; const used=f.newDay===dayStart(Date.now())?(f.newCount||0):0; return Math.max(0,f.newPerDay-used); }
+function setDueCount(st){ if(!st.fc||!st.fc.srs) return 0; const now=Date.now(); return st.cards.filter(c=>c.srs&&c.srs.due<=now).length; }
+
+function fcBuild(cram){
+  const f=F(); f.cram=!!(cram&&f.srs);
+  let pool=S.cards.filter(c=>!f.starredOnly||c.star);
+  if(!pool.length){ pool=S.cards; f.starredOnly=false; }
+  let ids, info=null;
+  if(scheduling(f)){
+    const now=Date.now();
+    const due=pool.filter(c=>c.srs&&c.srs.due<=now).sort((a,b)=>a.srs.due-b.srs.due);
+    const nw=pool.filter(c=>!c.srs).slice(0,newLeftToday(f));
+    ids=[...due,...nw].map(c=>c.id); info={due:due.length,new:nw.length};
+    if(f.shuffle) shuffle(ids);
+  } else { ids=pool.map(c=>c.id); if(f.shuffle) shuffle(ids); }
+  Object.assign(f,{order:ids,i:0,flipped:false,known:[],learning:[],history:[],round:1,total:ids.length,deckInfo:info,builtDay:dayStart(Date.now())});
   save();
 }
 function fcCard(){ return S.cards[F().order[F().i]]; }
 
 function fcRender(){
   const f=F(), n=f.order.length, done=f.i>=n;
-  $("fcPills").hidden=!f.track;
+  $("fcPills").hidden=!sorting(f);
   $("fcLearning").textContent=f.learning.length; $("fcKnown").textContent=f.known.length;
-  $("fcRound").textContent = f.track && f.round>1 ? `Round ${f.round}` : (f.starredOnly?"Starred":"");
-  $("fcCount").textContent = done ? `${n} / ${n}` : `${f.i+1} / ${n}`;
+  $("fcRound").textContent = scheduling(f) ? `Spaced repetition · ${f.deckInfo?f.deckInfo.due:0} due, ${f.deckInfo?f.deckInfo.new:0} new`
+    : f.cram ? "Practice · schedule unchanged" : f.track && f.round>1 ? `Round ${f.round}` : (f.starredOnly?"Starred":"");
+  $("fcCount").textContent = !n ? "" : done ? `${n} / ${n}` : `${f.i+1} / ${n}`;
   $("fcBar").style.width = (n? (done?100:f.i/n*100) : 0)+"%";
-  $("trackT").checked=f.track; $("fcFront").value=f.front;
+  $("trackT").checked=f.track||f.srs; $("trackT").disabled=f.srs; $("fcFront").value=f.front;
+  $("srsT").checked=f.srs; $("srsNewWrap").hidden=!f.srs; $("srsNew").value=String(f.newPerDay??20);
   $("fcShuffle").setAttribute("aria-pressed", f.shuffle);
   const starCount=S.cards.filter(c=>c.star).length;
   $("fcStarred").checked=f.starredOnly; $("fcStarred").disabled=!starCount&&!f.starredOnly;
@@ -550,26 +585,51 @@ function fcRender(){
   $("flipInner").classList.toggle("flipped", f.flipped);
 
   const p=$("fcPrev"), x=$("fcNext");
-  if(f.track){ p.innerHTML=IC.x; p.className="round bad"; p.title="Still learning (←)"; p.disabled=false;
+  if(scheduling(f)){ const nx=ivlText(nextIvl(c));
+               p.innerHTML=IC.x+"<small>again</small>"; p.className="round bad wide"; p.title="Still learning: see it again this session (←)"; p.disabled=false;
+               x.innerHTML=IC.check+`<small>${nx}</small>`; x.className="round good wide"; x.title=`Know: next review in ${nx} (→)`; }
+  else if(sorting(f)){ p.innerHTML=IC.x; p.className="round bad"; p.title="Still learning (←)"; p.disabled=false;
                x.innerHTML=IC.check; x.className="round good"; x.title="Know (→)"; }
   else { p.innerHTML=IC.left; p.className="round"; p.title="Previous (←)"; p.disabled=f.i===0;
          x.innerHTML=IC.right; x.className="round"; x.title="Next (→)"; }
-  $("fcUndo").disabled=!f.track||!f.history.length;
-  $("fcAuto").disabled=f.track; $("fcAuto").title=f.track?"Autoplay is off while tracking progress":"Autoplay";
+  $("fcUndo").disabled=!sorting(f)||!f.history.length;
+  $("fcAuto").disabled=sorting(f); $("fcAuto").title=sorting(f)?"Autoplay is off while sorting cards":"Autoplay";
 }
 
 function fcDone(){
   const f=F(), el=$("fcDone");
-  if(f.track){
+  if(scheduling(f)){
+    const now=Date.now(), pool=S.cards.filter(c=>!f.starredOnly||c.star);
+    const upcoming=pool.filter(c=>c.srs&&c.srs.due>now).sort((a,b)=>a.srs.due-b.srs.due);
+    const tomorrow=upcoming.filter(c=>c.srs.due<dayStart(now)+2*DAY).length;
+    const week=upcoming.filter(c=>c.srs.due<dayStart(now)+8*DAY).length;
+    const unseen=pool.filter(c=>!c.srs).length, capped=unseen>0&&newLeftToday(f)===0;
+    el.innerHTML=`<p class="big">${f.history.length?"You're caught up for today":"Nothing due right now"}</p>
+      <div class="done-stats"><div><small class="side">Reviewed</small><b>${f.history.length}</b></div><div><small class="side">Due tomorrow</small><b>${tomorrow}</b></div><div><small class="side">Next 7 days</small><b>${week}</b></div></div>
+      <p class="hint">${upcoming.length?`Next review ${whenText(upcoming[0].srs.due)}.`:""} ${capped?`You've hit today's limit of ${f.newPerDay} new cards. ${unseen} still unseen.`:unseen?`${unseen} new card${unseen>1?"s":""} not started yet.`:""}</p>
+      <div class="btnrow">${capped?'<button class="btn primary" id="srsMore">Learn 10 more new cards</button>':""}
+        <button class="btn${capped?"":" primary"}" id="srsCram">Practice all cards</button>
+        <button class="btn" id="fcToLearn">Practice in Learn</button></div>
+      <p class="hint">Practice doesn't change your review schedule.</p>
+      ${f.history.length?'<button class="link" id="fcBack">Back to last card</button>':""}`;
+    if(capped) $("srsMore").onclick=()=>{ f.newCount=(f.newCount||0)-10; fcBuild(); fcRender(); };
+    $("srsCram").onclick=()=>{ fcBuild(true); fcRender(); };
+    $("fcToLearn").onclick=()=>setMode("learn");
+    if(f.history.length) $("fcBack").onclick=fcUndo;
+    return;
+  }
+  if(sorting(f)){
     const l=f.learning.length, k=f.known.length, all=S.cards.length;
     el.innerHTML=`<p class="big">${l? "Nice work. Keep going." : "You know all of them."}</p>
       <div class="done-stats"><div><small class="side">Know</small><b style="color:var(--good)">${k}</b></div><div><small class="side">Still learning</small><b style="color:var(--bad)">${l}</b></div><div><small class="side">Cards left</small><b>${l}</b></div></div>
       <div class="btnrow">${l?`<button class="btn primary" id="fcAgain">Keep reviewing ${l} term${l>1?"s":""}</button>`:""}
       <button class="btn${l?"":" primary"}" id="fcReset">Restart flashcards</button>
+      ${f.cram?'<button class="btn" id="srsBackTo">Back to today\'s reviews</button>':""}
       <button class="btn" id="fcToLearn">Practice in Learn</button></div>
       ${f.history.length?'<button class="link" id="fcBack">Back to last card</button>':""}`;
     if(l) $("fcAgain").onclick=()=>{ const ids=f.learning.slice(); if(f.shuffle) shuffle(ids); Object.assign(f,{order:ids,i:0,flipped:false,learning:[],history:[],round:f.round+1}); save(); fcRender(); };
     if(f.history.length) $("fcBack").onclick=fcUndo;
+    if(f.cram) $("srsBackTo").onclick=()=>{ fcBuild(false); fcRender(); };
   } else {
     el.innerHTML=`<p class="big">You went through all ${f.order.length} cards</p>
       <p class="hint">Turn on Track progress to sort what you know from what you're still learning.</p>
@@ -577,7 +637,7 @@ function fcDone(){
       <button class="link" id="fcBack">Back to last card</button>`;
     $("fcBack").onclick=()=>{ f.i=f.order.length-1; f.flipped=false; save(); fcRender(); };
   }
-  $("fcReset").onclick=()=>{ fcBuild(); fcRender(); };
+  $("fcReset").onclick=()=>{ fcBuild(f.cram); fcRender(); };
   $("fcToLearn").onclick=()=>setMode("learn");
 }
 
@@ -586,15 +646,24 @@ function fcGo(d){ const f=F(), n=f.order.length; const i=Math.max(0,Math.min(n,f
 function fcRenderNoAnim(){ const fi=$("flipInner"); fi.style.transition="none"; fcRender(); void fi.offsetWidth; fi.style.transition=""; }
 function fcSort(known){
   const f=F(); if(f.i>=f.order.length) return;
-  f.history.push({i:f.i,known}); (known?f.known:f.learning).push(f.order[f.i]);
+  const id=f.order[f.i], h={i:f.i,known};
+  if(scheduling(f)){
+    const c=S.cards[id]; h.prev=c.srs?JSON.parse(JSON.stringify(c.srs)):null;
+    if(!c.srs){ const today=dayStart(Date.now()); if(f.newDay!==today){ f.newDay=today; f.newCount=0; } f.newCount=(f.newCount||0)+1; h.wasNew=true; }
+    schedule(c,known);
+    if(!known){ f.order.push(id); h.requeued=true; }
+  }
+  f.history.push(h); (known?f.known:f.learning).push(id);
   f.i++; f.flipped=false; save(); fcRenderNoAnim();
 }
 function fcUndo(){
   const f=F(), h=f.history.pop(); if(!h) return;
-  (h.known?f.known:f.learning).pop(); f.i=h.i; f.flipped=false; save(); fcRenderNoAnim();
+  (h.known?f.known:f.learning).pop();
+  if(h.prev!==undefined){ const c=S.cards[f.order[h.i]]; if(h.prev) c.srs=h.prev; else delete c.srs; if(h.wasNew) f.newCount=Math.max(0,(f.newCount||1)-1); if(h.requeued) f.order.pop(); }
+  f.i=h.i; f.flipped=false; save(); fcRenderNoAnim();
 }
-function fcLeft(){ F().track? fcSort(false) : fcGo(-1); }
-function fcRight(){ F().track? fcSort(true) : fcGo(1); }
+function fcLeft(){ sorting(F())? fcSort(false) : fcGo(-1); }
+function fcRight(){ sorting(F())? fcSort(true) : fcGo(1); }
 
 function speak(text){
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=.95; speechSynthesis.speak(u); }catch(e){}
@@ -602,7 +671,7 @@ function speak(text){
 function visibleText(){ const c=fcCard(); if(!c) return ""; const termFirst=F().front==="term"; return (F().flipped!==termFirst)? c.term : c.def; }
 
 function startAuto(){
-  const f=F(); if(f.track) return;
+  const f=F(); if(sorting(f)) return;
   if(f.i>=f.order.length){ f.i=0; f.flipped=false; fcRender(); }
   $("fcAuto").innerHTML=IC.pause; $("fcAuto").setAttribute("aria-pressed","true");
   speak(visibleText());
@@ -654,6 +723,8 @@ function fcWire(){
   $("fcAuto").onclick=()=> autoTimer? stopAuto() : startAuto();
   $("fcShuffle").onclick=()=>{ stopAuto(); const f=F(); f.shuffle=!f.shuffle; fcBuildKeepTrack(); };
   $("trackT").onchange=e=>{ e.target.blur(); stopAuto(); F().track=e.target.checked; fcBuildKeepTrack(); };
+  $("srsT").onchange=e=>{ e.target.blur(); stopAuto(); F().srs=e.target.checked; fcBuild(false); fcRender(); };
+  $("srsNew").onchange=e=>{ F().newPerDay=+e.target.value; fcBuild(); fcRender(); };
   $("fcFront").onchange=e=>{ F().front=e.target.value; F().flipped=false; save(); fcRenderNoAnim(); };
   $("fcStarred").onchange=e=>{ e.target.blur(); stopAuto(); F().starredOnly=e.target.checked; fcBuildKeepTrack(); };
   $("fcRestart").onclick=()=>{ stopAuto(); fcBuildKeepTrack(); };
@@ -668,13 +739,13 @@ function fcWire(){
     if(Math.abs(drag.dx)<6) return;
     fl.classList.add("dragging");
     fl.style.transform=`translateX(${drag.dx}px) rotate(${drag.dx/30}deg)`;
-    if(F().track){ $("tagK").style.opacity=Math.max(0,Math.min(1,drag.dx/120)); $("tagL").style.opacity=Math.max(0,Math.min(1,-drag.dx/120)); }
+    if(sorting(F())){ $("tagK").style.opacity=Math.max(0,Math.min(1,drag.dx/120)); $("tagL").style.opacity=Math.max(0,Math.min(1,-drag.dx/120)); }
   });
   const end=e=>{
     if(!drag) return; const dx=drag.dx; drag=null;
     fl.classList.remove("dragging"); fl.style.transform=""; $("tagK").style.opacity=0; $("tagL").style.opacity=0;
     if(Math.abs(dx)<6){ stopAuto(); fcFlip(); return; }
-    if(Math.abs(dx)>110){ stopAuto(); dx>0 ? (F().track?fcSort(true):fcGo(-1)) : (F().track?fcSort(false):fcGo(1)); }
+    if(Math.abs(dx)>110){ stopAuto(); dx>0 ? (sorting(F())?fcSort(true):fcGo(-1)) : (sorting(F())?fcSort(false):fcGo(1)); }
   };
   fl.addEventListener("pointerup",end); fl.addEventListener("pointercancel",()=>{ drag=null; fl.style.transform=""; fl.classList.remove("dragging"); });
 }
@@ -736,7 +807,7 @@ function renderLibrary(){
     return `<article class="set-row">
       <button class="set-open" data-open="${x.id}">
         <span class="set-name">${esc(x.name)}</span>
-        <span class="set-meta">${n} terms · ${m} mastered${st?` · ${st} starred`:""}${fn&&LU.folder==="all"?` · <span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap">${IC.folder}${esc(fn)}</span>`:""}</span>
+        <span class="set-meta">${n} terms · ${m} mastered${st?` · ${st} starred`:""}${(()=>{const d=setDueCount(x);return d?` · <b style="color:var(--accent)">${d} due</b>`:""})()}${fn&&LU.folder==="all"?` · <span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap">${IC.folder}${esc(fn)}</span>`:""}</span>
         <span class="minibar" aria-hidden="true"><i style="width:${n?m/n*100:0}%"></i></span>
         <span class="set-when">${x.studiedAt?"Studied "+ago(x.studiedAt):"Not studied yet"}</span>
       </button>
