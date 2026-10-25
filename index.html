@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Drill"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Drill"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
 <title>Recall Drill</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -65,6 +65,60 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .btn.danger-outline{color:var(--bad)}
 .link.danger{color:var(--bad)}
+.tabs{flex-wrap:wrap}
+@media (max-width:640px){header nav.tabs{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}header nav.tabs .tab{padding:8px 4px;text-align:center}}
+/* Match */
+.match-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.timer{font-family:var(--mono);font-size:1.7rem;font-variant-numeric:tabular-nums;font-weight:500}
+.match-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (min-width:620px){.match-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tile{font:inherit;font-size:.92rem;line-height:1.35;min-height:112px;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center;text-align:center;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;min-width:0;transition:opacity .3s,transform .3s,background .15s,border-color .15s}
+.tile.term{font-family:var(--display);font-weight:600;font-size:1.05rem}
+.tile:hover{border-color:var(--accent)}
+.tile:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.tile.sel{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.tile.ok{border-color:var(--good);background:var(--good-bg)}
+.tile.bad{border-color:var(--bad);background:var(--bad-bg);animation:shake .32s}
+.tile.gone{opacity:0;transform:scale(.92);pointer-events:none}
+@media (max-width:520px){.match-grid{gap:8px}.tile{font-size:.8rem;padding:8px 6px;min-height:96px}.tile.term{font-size:.9rem}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.penalty{color:var(--bad);font-family:var(--mono);font-size:.9rem}
+/* Test */
+.test-setup{display:grid;gap:16px}
+.field-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.field-row>.side{min-width:9em}
+.checks{display:flex;gap:8px;flex-wrap:wrap}
+.check{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-weight:500}
+.check input{accent-color:var(--accent);margin:0}
+.check:has(input:checked){border-color:var(--accent)}
+.test-list{display:grid;gap:14px}
+.sec-h{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:10px 0 0}
+.test-q{display:grid;gap:12px;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:0}
+.q-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.q-text{font-family:var(--display);font-weight:600;font-size:1.2rem;line-height:1.3;margin:0;overflow-wrap:anywhere}
+.q-text.long{font-family:var(--body);font-weight:500;font-size:1.05rem}
+.q-prop{margin:0;padding:10px 14px;background:var(--bg);border-radius:10px;overflow-wrap:anywhere}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:520px){.choices{grid-template-columns:1fr}}
+.choice{display:flex;gap:10px;align-items:baseline;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.choice input{accent-color:var(--accent);margin:0;flex:none}
+.choice:has(input:checked){border-color:var(--accent)}
+.choice.right{border-color:var(--good);background:var(--good-bg)}
+.choice.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.choice:has(input:disabled){cursor:default}
+.verdict{font-size:.8rem;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap}
+.verdict.good{background:var(--good-bg);color:var(--good)} .verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.bank{display:grid;gap:6px;padding:12px 14px;background:var(--bg);border-radius:10px;margin:0;list-style:none}
+.bank li{display:flex;gap:10px;overflow-wrap:anywhere;min-width:0}
+.bank b{font-family:var(--mono)}
+.m-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.m-row:first-of-type{border-top:0}
+.m-row select{font:inherit;font-family:var(--mono);padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.fix{font-size:.9rem;color:var(--muted);margin:0} .fix b{color:var(--good)}
+.score-card{display:grid;gap:12px;justify-items:center;text-align:center}
+.score{font-family:var(--display);font-weight:800;font-size:3rem;line-height:1;margin:0}
+.test-bar{position:sticky;bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px -20px rgba(16,28,70,.5)}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile.bad{animation:none}}
 .empty{text-align:center;color:var(--muted);padding:36px 16px;border:1.5px dashed var(--line);border-radius:14px;display:grid;gap:12px;justify-items:center}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
@@ -178,6 +232,8 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
     <nav class="tabs" role="tablist" aria-label="Study mode" id="modeTabs">
       <button class="tab" id="tabFc" role="tab">Flashcards</button>
       <button class="tab" id="tabLearn" role="tab">Learn</button>
+      <button class="tab" id="tabMatch" role="tab">Match</button>
+      <button class="tab" id="tabTest" role="tab">Test</button>
     </nav>
     <div class="hdr-btns">
       <button class="btn sync-btn" id="syncBtn" title="Sync"><span class="dot" id="syncDot"></span><span id="syncLbl">Sync</span></button>
@@ -247,6 +303,9 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
     </div>
     <p class="hint">Space flips. Arrows move between cards, or sort them when tracking progress. Z undoes. When sorting you can also drag the card left or right. With spaced repetition on, ✓ pushes a card further out and ✕ brings it back soon.</p>
   </section>
+
+  <section class="view" id="matchView" hidden></section>
+  <section class="view" id="testView" hidden></section>
 
   <section class="view" id="learnView" hidden>
     <div class="levels">
@@ -487,8 +546,9 @@ function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;","
 
 /* ---------------- Views ---------------- */
 function showView(id){
-  ["libView","fcView","learnView","editView","syncView"].forEach(v=>$(v).hidden=v!==id);
-  const inSet=id==="fcView"||id==="learnView";
+  if(id!=="matchView") stopMatch();
+  ["libView","fcView","learnView","matchView","testView","editView","syncView"].forEach(v=>$(v).hidden=v!==id);
+  const inSet=["fcView","learnView","matchView","testView"].includes(id);
   $("modeTabs").hidden=!inSet; $("editBtn").hidden=!inSet;
   $("crumb").hidden=!(inSet||(id==="editView"&&S));
   if(S) $("crumbName").textContent=S.name;
@@ -496,8 +556,10 @@ function showView(id){
 function goBack(){ if(R.activeId&&S) setMode(S.mode||"flashcards"); else goLibrary(); }
 function setMode(m, first){
   stopAuto(); S.mode=m; save(false);
-  $("tabFc").setAttribute("aria-selected", m==="flashcards"); $("tabLearn").setAttribute("aria-selected", m==="learn");
+  [["tabFc","flashcards"],["tabLearn","learn"],["tabMatch","match"],["tabTest","test"]].forEach(([t,k])=>$(t).setAttribute("aria-selected", m===k));
   if(m==="flashcards"){ showView("fcView"); fcRender(); }
+  else if(m==="match"){ showView("matchView"); matchIntro(); }
+  else if(m==="test"){ showView("testView"); testShow(); }
   else { showView("learnView"); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); }
 }
 
@@ -759,6 +821,206 @@ function fcWire(){
   fl.addEventListener("pointerup",end); fl.addEventListener("pointercancel",()=>{ drag=null; fl.style.transform=""; fl.classList.remove("dragging"); });
 }
 function fcBuildKeepTrack(){ fcBuild(); fcRender(); }
+
+/* ---------------- Match ---------------- */
+let M=null, matchTick=null;
+const fmtTime=ms=>(ms/1000).toFixed(1)+"s";
+function stopMatch(){ if(matchTick){ clearInterval(matchTick); matchTick=null; } }
+function matchIntro(){
+  stopMatch(); M=null;
+  const n=Math.min(6,S.cards.length), best=S.matchBest;
+  $("matchView").innerHTML=`<section class="card center">
+    <p class="meta" style="justify-content:center">Match</p>
+    <p class="big">Match the terms and definitions</p>
+    <p class="hint">Tap a term, then its definition. ${n} pairs. Get them all as fast as you can. A wrong match adds 1 second.</p>
+    ${best?`<p class="hint">Your best for this set: <b>${fmtTime(best)}</b></p>`:""}
+    <button class="btn primary" id="matchGo">Start game</button></section>`;
+  $("matchGo").onclick=matchStart; $("matchGo").focus();
+}
+function matchStart(){
+  stopMatch();
+  const seen=new Set(), picks=[];
+  for(const c of shuffle(S.cards.slice())){ const k=c.def.toLowerCase(); if(seen.has(k)||seen.has("t:"+c.term.toLowerCase())) continue; seen.add(k); seen.add("t:"+c.term.toLowerCase()); picks.push(c); if(picks.length===6) break; }
+  const tiles=shuffle(picks.flatMap(c=>[{id:c.id,kind:"term",text:c.term},{id:c.id,kind:"def",text:c.def}]));
+  M={tiles,sel:null,start:performance.now(),penalty:0,matched:0,pairs:picks.length,busy:false};
+  $("matchView").innerHTML=`<div class="match-top"><span class="timer" id="mTime">0.0s</span><span class="penalty" id="mPen"></span><button class="btn" id="mQuit">Start over</button></div>
+    <div class="match-grid" id="mGrid">${tiles.map((t,i)=>`<button class="tile ${t.kind}" data-i="${i}">${esc(t.text)}</button>`).join("")}</div>`;
+  $("mQuit").onclick=matchIntro;
+  $("mGrid").onclick=e=>{ const b=e.target.closest(".tile"); if(b) matchPick(+b.dataset.i, b); };
+  matchTick=setInterval(()=>{ if(M&&$("mTime")) $("mTime").textContent=fmtTime(performance.now()-M.start+M.penalty); },100);
+}
+function matchPick(i,b){
+  if(!M||M.busy||b.classList.contains("gone")) return;
+  const g=$("mGrid");
+  if(M.sel===null){ M.sel=i; b.classList.add("sel"); return; }
+  if(M.sel===i){ M.sel=null; b.classList.remove("sel"); return; }
+  const a=M.tiles[M.sel], t=M.tiles[i], ab=g.querySelector(`[data-i="${M.sel}"]`);
+  M.sel=null; ab.classList.remove("sel");
+  if(a.id===t.id && a.kind!==t.kind){
+    ab.classList.add("ok"); b.classList.add("ok"); M.matched++;
+    setTimeout(()=>{ ab.classList.add("gone"); b.classList.add("gone"); },220);
+    if(M.matched===M.pairs) setTimeout(matchFinish,380);
+  } else {
+    M.penalty+=1000; M.busy=true; $("mPen").textContent=`+${M.penalty/1000}s penalty`;
+    ab.classList.add("bad"); b.classList.add("bad");
+    setTimeout(()=>{ ab.classList.remove("bad"); b.classList.remove("bad"); if(M) M.busy=false; },420);
+  }
+}
+function matchFinish(){
+  stopMatch(); const time=performance.now()-M.start+M.penalty, prev=S.matchBest, best=!prev||time<prev;
+  if(best){ S.matchBest=Math.round(time); save(); }
+  $("matchView").innerHTML=`<section class="card center">
+    <p class="meta" style="justify-content:center">${best?(prev?"New best time":"First finish"):"Finished"}</p>
+    <p class="score">${fmtTime(time)}</p>
+    <p class="hint">${M.penalty?`Includes ${M.penalty/1000}s of penalties. `:""}${best?(prev?`Your old best was ${fmtTime(prev)}.`:"That's your time to beat."):`Your best is ${fmtTime(prev)}.`}</p>
+    <div class="btnrow"><button class="btn primary" id="matchGo">Play again</button><button class="btn" id="matchLearn">Practice in Learn</button></div></section>`;
+  M=null; $("matchGo").onclick=matchStart; $("matchLearn").onclick=()=>setMode("learn"); $("matchGo").focus();
+}
+
+/* ---------------- Test ---------------- */
+let T=null;
+const TYPES=[["tf","True/False"],["mc","Multiple choice"],["matching","Matching"],["written","Written"]];
+function testShow(){ if(T&&T.setId===S.id) testRender(); else testSetup(); }
+function testSetup(prefill){
+  const n=S.cards.length, o=Object.assign({count:Math.min(n,20),answerWith:"term",types:["tf","mc","matching","written"]}, S.testOpts||{}, prefill||{});
+  o.count=Math.min(Math.max(1,o.count),n);
+  $("testView").innerHTML=`<section class="card test-setup">
+    <div class="meta"><span>Set up your test</span><span>${S.lastScore!=null?`Last score ${S.lastScore}%`:""}</span></div>
+    <div class="field-row"><label class="side" for="tCount">Questions</label><input id="tCount" class="num-in" type="number" min="1" max="${n}" value="${o.count}" inputmode="numeric"><span class="hint">max ${n}</span></div>
+    <div class="field-row"><label class="side" for="tAnswer">Answer with</label><select id="tAnswer" class="num-in" style="width:auto"><option value="term">Term</option><option value="def">Definition</option><option value="both">Both</option></select></div>
+    <div class="field-row"><span class="side">Question types</span><div class="checks">${TYPES.map(([k,l])=>`<label class="check"><input type="checkbox" data-type="${k}" ${o.types.includes(k)?"checked":""}> ${l}</label>`).join("")}</div></div>
+    <p class="err-text" id="tErr" hidden></p>
+    <div><button class="btn primary" id="tMake">Create test</button></div></section>`;
+  $("tAnswer").value=o.answerWith;
+  $("tMake").onclick=()=>{
+    const count=Math.round(+$("tCount").value), types=[...document.querySelectorAll("[data-type]")].filter(x=>x.checked).map(x=>x.dataset.type);
+    if(!types.length){ $("tErr").hidden=false; $("tErr").textContent="Pick at least one question type."; return; }
+    if(!(count>=1)){ $("tErr").hidden=false; $("tErr").textContent="Enter how many questions you want."; return; }
+    S.testOpts={count:Math.min(count,n),answerWith:$("tAnswer").value,types}; save(false);
+    testMake(shuffle(S.cards.slice()).slice(0,S.testOpts.count), S.testOpts);
+  };
+}
+function testMake(cards, o){
+  const dir=()=>o.answerWith==="both"?(Math.random()<.5?"term":"def"):o.answerWith;
+  const QA=(c,d)=>d==="term"?{q:c.def,a:c.term}:{q:c.term,a:c.def};
+  // split cards across the chosen types, in Quizlet's section order
+  let types=TYPES.map(t=>t[0]).filter(k=>o.types.includes(k));
+  const share={}; let left=cards.length;
+  types.forEach((k,i)=>{ share[k]=Math.round(left/(types.length-i)); left-=share[k]; });
+  if(share.matching===1 && types.length>1){ const other=types.find(k=>k!=="matching"); share[other]++; share.matching=0; }
+  const secs=[]; let at=0;
+  for(const k of types){
+    const group=cards.slice(at,at+share[k]); at+=share[k]; if(!group.length) continue;
+    if(k==="matching"){
+      for(let g=0; g<group.length; g+=5){
+        let chunk=group.slice(g,g+5); if(chunk.length===1 && secs.length){ /* fold a lone leftover into written */ secs.push({type:"written",qs:[mkWritten(chunk[0])]}); continue; }
+        const d=dir(), items=chunk.map(c=>({id:c.id,...QA(c,d)})), bank=shuffle(items.map(x=>x.a));
+        secs.push({type:"matching",qs:[{type:"matching",items,bank,answers:{}}]});
+      }
+    } else secs.push({type:k,qs:group.map(c=>k==="tf"?mkTF(c):k==="mc"?mkMC(c):mkWritten(c))});
+  }
+  function others(c,d){ return shuffle(S.cards.filter(x=>x.id!==c.id).map(x=>QA(x,d).a).filter((v,i,a)=>a.indexOf(v)===i && v!==QA(c,d).a)); }
+  function mkTF(c){ const d=dir(), {q,a}=QA(c,d), alt=others(c,d)[0]; const truth=!alt||Math.random()<.5; return {type:"tf",id:c.id,q,a,shown:truth?a:alt,truth,ans:null}; }
+  function mkMC(c){ const d=dir(), {q,a}=QA(c,d); return {type:"mc",id:c.id,q,a,opts:shuffle([a,...others(c,d).slice(0,3)]),ans:null}; }
+  function mkWritten(c){ const d=dir(), {q,a}=QA(c,d); return {type:"written",id:c.id,q,a,ans:""}; }
+  T={setId:S.id,opts:o,secs,graded:false,start:Date.now()};
+  testRender(); window.scrollTo(0,0);
+}
+const LETTERS="ABCDEFGHIJ";
+function testQuestions(){ return T.secs.flatMap(s=>s.qs); }
+function testCounts(){
+  let total=0, answered=0;
+  for(const q of testQuestions()){
+    if(q.type==="matching"){ total+=q.items.length; answered+=q.items.filter((_,i)=>q.answers[i]!==undefined&&q.answers[i]!=="").length; }
+    else { total++; if(q.type==="written"?q.ans.trim():q.ans!==null) answered++; }
+  }
+  return {total,answered};
+}
+function testRender(){
+  const g=T.graded; let num=0;
+  const label={tf:"True or false",mc:"Multiple choice",matching:"Matching",written:"Written"};
+  const ver=ok=>g?`<span class="verdict ${ok?"good":"bad"}">${ok?"Correct":"Incorrect"}</span>`:"";
+  const body=T.secs.map((sec,si)=>{
+    const prev=si>0?T.secs[si-1].type:null;
+    const head=sec.type!==prev?`<h3 class="sec-h">${label[sec.type]}</h3>`:"";
+    return head+sec.qs.map((q,qi)=>{
+      const key=`${si}-${qi}`;
+      if(q.type==="matching"){
+        const start=num+1; num+=q.items.length;
+        return `<article class="test-q"><div class="q-head"><span class="side">Questions ${start}–${num}</span>${g?`<span class="verdict ${q.items.every((x,i)=>q.bank[q.answers[i]]===x.a)?"good":"bad"}">${q.items.filter((x,i)=>q.bank[q.answers[i]]===x.a).length} of ${q.items.length}</span>`:""}</div>
+          <p class="hint" style="margin:0">Match each prompt with an answer below.</p>
+          <ol class="bank">${q.bank.map((a,i)=>`<li><b>${LETTERS[i]}</b><span>${esc(a)}</span></li>`).join("")}</ol>
+          <div>${q.items.map((x,i)=>{ const ok=q.bank[q.answers[i]]===x.a;
+            return `<div class="m-row"><span style="overflow-wrap:anywhere">${esc(x.q)}</span><select data-k="${key}" data-mi="${i}" ${g?"disabled":""} aria-label="Answer for ${esc(x.q)}"><option value="">–</option>${q.bank.map((_,j)=>`<option value="${j}" ${String(q.answers[i])===String(j)?"selected":""}>${LETTERS[j]}</option>`).join("")}</select>
+              ${g&&!ok?`<p class="fix" style="grid-column:1/-1">Answer: <b>${LETTERS[q.bank.indexOf(x.a)]}</b> · ${esc(x.a)}</p>`:""}</div>`; }).join("")}</div></article>`;
+      }
+      num++;
+      const qt=`<p class="q-text${q.q.length>90?" long":""}">${esc(q.q)}</p>`;
+      if(q.type==="tf"){
+        const ok=q.ans===q.truth;
+        return `<article class="test-q"><div class="q-head"><span class="side">${num}</span>${ver(ok)}</div>${qt}<p class="q-prop">${esc(q.shown)}</p>
+          <div class="choices">${[true,false].map(v=>`<label class="choice${g&&v===q.truth?" right":g&&q.ans===v?" wrong":""}"><input type="radio" name="q${key}" data-k="${key}" value="${v}" ${q.ans===v?"checked":""} ${g?"disabled":""}> ${v?"True":"False"}</label>`).join("")}</div>
+          ${g&&!ok&&!q.truth?`<p class="fix">Correct match: <b>${esc(q.a)}</b></p>`:""}</article>`;
+      }
+      if(q.type==="mc"){
+        const ok=q.ans===q.a;
+        return `<article class="test-q"><div class="q-head"><span class="side">${num}</span>${ver(ok)}</div>${qt}
+          <div class="choices">${q.opts.map((o,oi)=>`<label class="choice${g&&o===q.a?" right":g&&q.ans===o?" wrong":""}"><input type="radio" name="q${key}" data-k="${key}" value="${oi}" ${q.ans===o?"checked":""} ${g?"disabled":""}> <span>${esc(o)}</span></label>`).join("")}</div></article>`;
+      }
+      const ok=close(q.ans,q.a);
+      return `<article class="test-q"><div class="q-head"><span class="side">${num}</span>${ver(ok)}</div>${qt}
+        <input class="text-in" data-k="${key}" value="${esc(q.ans)}" placeholder="Type the answer" autocomplete="off" autocapitalize="off" spellcheck="false" ${g?"disabled":""}>
+        ${g&&!ok?`<p class="fix">Correct answer: <b>${esc(q.a)}</b>${q.ans.trim()?"":" (left blank)"}</p>`:""}</article>`;
+    }).join("");
+  }).join("");
+
+  let top="";
+  if(g){
+    const r=T.result;
+    top=`<section class="card score-card"><p class="meta" style="justify-content:center;width:100%">Your results</p>
+      <p class="score">${r.pct}%</p><p class="hint">${r.right} of ${r.total} correct${r.blank?` · ${r.blank} left blank`:""}</p>
+      <div class="btnrow">${r.missed.length?`<button class="btn primary" id="tRetake">Retake ${r.missed.length} missed</button>`:""}<button class="btn${r.missed.length?"":" primary"}" id="tNew">New test</button><button class="btn" id="tLearn">Practice in Learn</button></div></section>`;
+  }
+  const {total,answered}=testCounts();
+  $("testView").innerHTML=top+`<div class="test-list" id="tList">${body}</div>`+
+    (g?"":`<div class="test-bar"><span class="hint" id="tProg">${answered} of ${total} answered</span><span id="tConfirm"></span><button class="btn primary" id="tSubmit">Submit test</button></div>`);
+  if(g){
+    if($("tRetake")) $("tRetake").onclick=()=>testMake(shuffle(T.result.missed.map(id=>S.cards[id])), T.opts);
+    $("tNew").onclick=()=>{ T=null; testSetup(); window.scrollTo(0,0); };
+    $("tLearn").onclick=()=>setMode("learn");
+    return;
+  }
+  const list=$("tList");
+  const upd=e=>{
+    const el=e.target, k=el.dataset.k; if(!k) return;
+    const [si,qi]=k.split("-").map(Number), q=T.secs[si].qs[qi];
+    if(q.type==="tf") q.ans=el.value==="true";
+    else if(q.type==="mc") q.ans=q.opts[+el.value];
+    else if(q.type==="written") q.ans=el.value;
+    else if(q.type==="matching") q.answers[+el.dataset.mi]=el.value===""?undefined:+el.value;
+    const c=testCounts(); $("tProg").textContent=`${c.answered} of ${c.total} answered`; $("tConfirm").innerHTML="";
+  };
+  list.addEventListener("change",upd); list.addEventListener("input",upd);
+  $("tSubmit").onclick=()=>{
+    const c=testCounts(), miss=c.total-c.answered;
+    if(miss && !T.confirmShown){ T.confirmShown=true; $("tConfirm").innerHTML=`<span class="err-text">${miss} unanswered. Submit anyway?</span>`; $("tSubmit").textContent="Submit anyway"; return; }
+    testGrade();
+  };
+}
+function testGrade(){
+  let right=0,total=0,blank=0; const missed=new Set();
+  for(const q of testQuestions()){
+    if(q.type==="matching"){ q.items.forEach((x,i)=>{ total++; if(q.answers[i]===undefined) blank++; if(q.bank[q.answers[i]]===x.a) right++; else missed.add(x.id); }); continue; }
+    total++;
+    const ok=q.type==="tf"?q.ans===q.truth:q.type==="mc"?q.ans===q.a:close(q.ans,q.a);
+    if(q.type==="written"?!q.ans.trim():q.ans===null) blank++;
+    if(ok) right++; else missed.add(q.id);
+  }
+  const pct=Math.round(right/total*100);
+  T.graded=true; T.result={right,total,blank,pct,missed:[...missed]};
+  S.lastScore=pct; save();
+  testRender(); window.scrollTo(0,0);
+}
 
 /* ---------------- Library ---------------- */
 IC.folder='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 6.5A1.5 1.5 0 015 5h4.2l2 2.2H19a1.5 1.5 0 011.5 1.5v8.8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5z"/></svg>';
@@ -1042,6 +1304,8 @@ R = load() || sampleRoot();
 fcWire(); libWire();
 $("tabFc").onclick=()=>setMode("flashcards");
 $("tabLearn").onclick=()=>setMode("learn");
+$("tabMatch").onclick=()=>setMode("match");
+$("tabTest").onclick=()=>setMode("test");
 if(R.activeId && R.sets[R.activeId]) openSet(R.activeId); else goLibrary();
 $("syncBtn").onclick=()=>syncPanel();
 if(R.sync&&R.sync.gistId){ setSync(navigator.onLine?"ok":"off"); syncNow(); }
