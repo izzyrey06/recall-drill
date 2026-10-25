@@ -66,7 +66,7 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .btn.danger-outline{color:var(--bad)}
 .link.danger{color:var(--bad)}
 .tabs{flex-wrap:wrap}
-@media (max-width:640px){header nav.tabs{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}header nav.tabs .tab{padding:8px 4px;text-align:center}}
+@media (max-width:640px){header nav.tabs{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}header nav.tabs .tab{padding:8px 2px;text-align:center;font-size:.86rem;letter-spacing:-.01em}}
 /* Match */
 .match-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .timer{font-family:var(--mono);font-size:1.7rem;font-variant-numeric:tabular-nums;font-weight:500}
@@ -132,6 +132,24 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .prev td:first-child{font-weight:600;width:35%}
 .prev td.n{width:2.5em;color:var(--muted);font-family:var(--mono);font-size:.78rem;font-weight:400}
 .skipped{font-size:.88rem;color:var(--muted);margin:0} .skipped code{font-family:var(--mono);font-size:.82rem;background:var(--bg);padding:1px 6px;border-radius:6px}
+.learn-top{display:flex;justify-content:flex-end}
+.learn-top .btn{display:inline-flex;gap:8px;align-items:center}
+.learn-top svg{width:18px;height:18px}
+.l-opts{gap:0}
+.opt-row{display:flex;justify-content:space-between;align-items:center;gap:12px 20px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.opt-row:first-of-type{border-top:0}
+.opt-row .lbl{display:grid;gap:2px;min-width:0;flex:1 1 220px}
+.opt-row .lbl b{font-weight:600}
+.opt-row .lbl small{color:var(--muted);font-size:.84rem}
+.opt-row select{font:inherit;padding:7px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg label{padding:7px 12px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted);border-left:1.5px solid var(--line)}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
+.seg label:has(input:focus-visible){outline:3px solid var(--mark);outline-offset:-3px}
+.flash-ans{margin:0;padding:14px 16px;background:var(--bg);border-radius:12px;font-weight:600;overflow-wrap:anywhere}
+.retype{display:grid;gap:8px;margin-top:8px}
 .empty{text-align:center;color:var(--muted);padding:36px 16px;border:1.5px dashed var(--line);border-radius:14px;display:grid;gap:12px;justify-items:center}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
@@ -321,6 +339,24 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
   <section class="view" id="testView" hidden></section>
 
   <section class="view" id="learnView" hidden>
+    <div class="learn-top"><button class="btn" id="lOptBtn" aria-expanded="false" aria-controls="lOpts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>Options</button></div>
+    <section class="card l-opts" id="lOpts" hidden>
+      <div class="meta" style="padding-bottom:8px"><span>Learn options</span><button class="link" id="lOptDone">Done</button></div>
+      <div class="opt-row"><span class="lbl"><b>Answer with</b><small>Which side you have to recall</small></span>
+        <span class="seg" role="radiogroup" aria-label="Answer with"><label><input type="radio" name="lAns" value="term"> Term</label><label><input type="radio" name="lAns" value="def"> Definition</label><label><input type="radio" name="lAns" value="both"> Both</label></span>
+        <select id="askWith" hidden aria-hidden="true" tabindex="-1"><option value="term">Term</option><option value="def">Definition</option><option value="both">Both</option></select></div>
+      <div class="opt-row"><span class="lbl"><b>Study starred terms only</b><small id="lStarCount">Star cards in Flashcards to use this</small></span><label class="switch"><input type="checkbox" id="lStar" aria-label="Study starred terms only"></label></div>
+      <div class="opt-row"><span class="lbl"><b>Shuffle terms</b><small>Off keeps the order of your set</small></span><label class="switch"><input type="checkbox" id="lShuf" aria-label="Shuffle terms"></label></div>
+      <div class="opt-row"><span class="lbl"><b>Audio</b><small>Read each question aloud</small></span><label class="switch"><input type="checkbox" id="lAudio" aria-label="Read questions aloud"></label></div>
+      <div class="opt-row"><span class="lbl"><b>Question types</b><small id="lTypesHint">New terms start with the first type you pick, then move on to the next</small></span>
+        <span class="checks"><label class="check"><input type="checkbox" data-ltype="flash"> Flashcards</label><label class="check"><input type="checkbox" data-ltype="mc"> Multiple choice</label><label class="check"><input type="checkbox" data-ltype="write"> Written</label></span></div>
+      <div class="opt-row"><span class="lbl"><b>Grading</b><small id="lGradeHint"></small></span>
+        <select id="lGrade" aria-label="Grading"><option value="relaxed">Relaxed</option><option value="moderate">Moderate</option><option value="strict">Strict</option></select></div>
+      <div class="opt-row"><span class="lbl"><b>Retype answers</b><small id="lRetypeHint">After a miss, type the correct answer before moving on</small></span><label class="switch"><input type="checkbox" id="lRetype" aria-label="Retype missed answers"></label></div>
+      <div class="opt-row"><span class="lbl"><b>Questions per round</b></span>
+        <select id="roundSize" aria-label="Questions per round"><option>5</option><option selected>7</option><option>10</option><option>15</option><option>20</option></select></div>
+      <div class="opt-row"><span class="lbl"><b>Restart Learn</b><small>Resets New, Familiar and Mastered for this set</small></span><span id="lResetWrap"><button class="btn danger-outline" id="resetBtn">Restart</button></span></div>
+    </section>
     <div class="levels">
       <div class="lvl"><small>New</small><b id="cNew">0</b></div>
       <div class="lvl"><small>Familiar</small><b id="cFam">0</b></div>
@@ -330,20 +366,12 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 
     <section class="card" id="stage"></section>
 
-    <div class="settings">
-      <label for="askWith">Answer with</label>
-      <select id="askWith"><option value="term">Term</option><option value="def">Definition</option></select>
-      <label for="roundSize">Per round</label>
-      <select id="roundSize"><option>5</option><option selected>7</option><option>10</option></select>
-      <button class="link" id="resetBtn">Restart Learn</button>
-    </div>
-
     <details class="how">
       <summary>How Learn works</summary>
       <ol>
-        <li>New terms are asked as multiple choice. Right answer moves them to Familiar.</li>
-        <li>Familiar terms come back as a written answer. Right answer makes them Mastered.</li>
-        <li>Miss one and it drops a level and comes back later in the same round.</li>
+        <li>New terms are asked with your first question type (multiple choice by default). Right answer moves them to Familiar.</li>
+        <li>Familiar terms come back as your next type (written by default). Right answer makes them Mastered.</li>
+        <li>Miss one and it stays where it is and comes back later in the same round.</li>
         <li>Rounds pull Familiar terms first, then new ones. You finish when every term is Mastered.</li>
       </ol>
     </details>
@@ -414,96 +442,141 @@ function close(a,b){
 }
 function lev(a,b){const m=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const t=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return m[b.length]}
 
-const ask = c=> S.askWith==="term" ? {q:c.def,a:c.term} : {q:c.term,a:c.def};
+const ask=(c,d)=>(d||"term")==="term" ? {q:c.def,a:c.term} : {q:c.term,a:c.def};
+function LO(){ S.learnOpts=Object.assign({starred:false,shuffle:false,audio:false,types:{flash:false,mc:true,write:true},grading:"moderate",retype:false}, S.learnOpts||{}); return S.learnOpts; }
+function lpool(){ const p=LO().starred?S.cards.filter(c=>c.star):S.cards; return p.length?p:S.cards; }
+function pickDir(){ return S.askWith==="both"?(Math.random()<.5?"term":"def"):(S.askWith||"term"); }
+function qType(c){ const t=LO().types, order=c.lvl===0?["mc","flash","write"]:["write","mc","flash"]; return order.find(k=>t[k])||"mc"; }
+const STOP=new Set("the a an and or of to in on for with by is are was be as at it its that this from into".split(" "));
+const words=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").split(/[^a-z0-9]+/).filter(w=>w&&!STOP.has(w));
+// Grading levels, modeled on Quizlet: strict = exact apart from case/punctuation; moderate = small typos ok; relaxed = also alternatives and key-word answers
+function check(typed,ans){
+  if(!typed.trim()) return false;
+  const g=LO().grading;
+  if(g==="strict"){ const n=x=>x.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,""); return n(typed)===n(ans); }
+  if(close(typed,ans)) return true;
+  if(g!=="relaxed") return false;
+  const alts=ans.split(/\s*(?:[,;/]|\bor\b)\s*/).filter(x=>x.trim().length>1);
+  if(alts.length>1 && alts.some(a=>close(typed,a))) return true;
+  const need=words(ans), got=words(typed); if(!need.length) return false;
+  const hit=need.filter(w=>got.some(x=>x===w||(w.length>=5&&lev(x,w)<=1))).length;
+  return hit/need.length>=0.7 && got.length<=need.length*2+3;
+}
+const GRADE_HINT={relaxed:"Accepts typos, any one of several listed answers, and answers with the key words in any order",moderate:"Needs the right answer but forgives small typos, accents and words like “the”",strict:"Must match exactly, apart from capitals and punctuation"};
 
 function stats(){
-  const n=S.cards.length, f=S.cards.filter(c=>c.lvl===1).length, m=S.cards.filter(c=>c.lvl===2).length;
+  const p=lpool(), n=p.length, f=p.filter(c=>c.lvl===1).length, m=p.filter(c=>c.lvl===2).length;
   $("cNew").textContent=n-f-m; $("cFam").textContent=f; $("cMas").textContent=m;
   $("barM").style.width=(m/n*100)+"%"; $("barF").style.width=(f/n*100)+"%";
 }
 
 function startRound(){
-  const open = S.cards.filter(c=>c.lvl<2);
+  const open = lpool().filter(c=>c.lvl<2);
   if(!open.length){ finish(); return; }
   const fam = shuffle(open.filter(c=>c.lvl===1)).sort((a,b)=>b.miss-a.miss);
-  const nw = open.filter(c=>c.lvl===0);
-  const pick = [...fam, ...nw].slice(0, S.roundSize);
-  S.queue = shuffle(pick.map(c=>c.id));
+  let nw = open.filter(c=>c.lvl===0); if(LO().shuffle) nw=shuffle(nw);
+  const ids = [...fam, ...nw].slice(0, S.roundSize).map(c=>c.id);
+  S.queue = LO().shuffle ? shuffle(ids) : ids.sort((a,b)=>a-b);
   S.roundNo++; S.inRound=true; S.done=0; S.total=S.queue.length; S.rightThisRound=0;
   save(); next();
 }
+function rebuildRound(){ current=null; S.inRound=false; S.queue=[]; S.roundNo=Math.max(0,S.roundNo-1); save(); startRound(); }
 
 function next(){
   stats();
   if(!S.queue.length){ S.inRound=false; save(); checkpoint(); return; }
   const c = S.cards[S.queue[0]];
-  current = {c, type: c.lvl===0 ? "mc" : "write"};
-  current.type==="mc" ? renderMC() : renderWrite();
+  current = {c, type:qType(c), dir:pickDir()};
+  ({mc:renderMC,write:renderWrite,flash:renderFlash})[current.type]();
+  if(LO().audio) speak(ask(c,current.dir).q);
 }
-
+const sideName=()=>current.dir==="term"?"term":"definition";
 function header(type){
   return `<div class="meta"><span>Round ${S.roundNo} · ${S.done+1} of ${S.total}</span><span>${type}</span></div>`;
 }
 
 function renderMC(){
-  const {c}=current, {q,a}=ask(c);
-  const pool = shuffle(S.cards.filter(x=>x.id!==c.id)).slice(0,3).map(x=>ask(x).a);
-  const opts = shuffle([a,...pool]);
+  const {c,dir}=current, {q,a}=ask(c,dir);
+  const others = shuffle(S.cards.filter(x=>x.id!==c.id).map(x=>ask(x,dir).a).filter((v,i,arr)=>v!==a&&arr.indexOf(v)===i)).slice(0,3);
+  const opts = shuffle([a,...others]);
   current.opts=opts;
   $("stage").innerHTML = header("Multiple choice") +
-    `<p class="prompt">${esc(q)}</p><p class="hint">Choose the matching ${S.askWith==="term"?"term":"definition"}</p>
+    `<p class="prompt">${esc(q)}</p><p class="hint">Choose the matching ${sideName()}</p>
      <div class="opts">${opts.map((o,i)=>`<button class="opt" id="opt${i}" data-i="${i}"><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join("")}</div>
      <div id="fb"></div>`;
   document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pickMC(+b.dataset.i));
 }
 function pickMC(i){
   if(current.answered) return; current.answered=true;
-  const {c}=current, a=ask(c).a, ok=current.opts[i]===a;
+  const a=ask(current.c,current.dir).a, ok=current.opts[i]===a;
   document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true; if(current.opts[j]===a) b.classList.add("right"); else if(j===i) b.classList.add("wrong")});
   grade(ok);
 }
 
 function renderWrite(){
-  const {c}=current, {q}=ask(c);
+  const {c,dir}=current, {q,a}=ask(c,dir);
   $("stage").innerHTML = header("Written") +
-    `<p class="prompt">${esc(q)}</p><p class="hint">Type the ${S.askWith==="term"?"term":"definition"}</p>
+    `<p class="prompt">${esc(q)}</p><p class="hint">Type the ${sideName()}</p>
      <form class="write" id="wf"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your answer"><button class="btn primary">Check</button></form>
      <button class="link" id="dunno" type="button">Don't know</button>
      <div id="fb"></div>`;
   const inp=$("ans"); inp.focus();
-  $("wf").onsubmit=e=>{e.preventDefault(); if(current.answered) return; current.answered=true; current.typed=inp.value; inp.disabled=true; $("dunno").hidden=true; grade(close(inp.value, ask(c).a))};
+  $("wf").onsubmit=e=>{e.preventDefault(); if(current.answered) return; current.answered=true; current.typed=inp.value; inp.disabled=true; $("dunno").hidden=true; grade(check(inp.value, a))};
   $("dunno").onclick=()=>{ if(current.answered) return; current.answered=true; current.typed=""; inp.disabled=true; $("dunno").hidden=true; grade(false)};
 }
 
+function renderFlash(){
+  const {c,dir}=current, {q,a}=ask(c,dir);
+  $("stage").innerHTML = header("Flashcard") +
+    `<p class="prompt">${esc(q)}</p><p class="hint">Think of the ${sideName()}, then check yourself</p>
+     <p class="flash-ans" id="flashAns" hidden>${esc(a)}</p>
+     <div class="row" id="flashBtns"><button class="btn primary" id="reveal">Show answer</button></div>
+     <div id="fb"></div>`;
+  $("reveal").focus();
+  $("reveal").onclick=()=>{
+    $("flashAns").hidden=false;
+    $("flashBtns").innerHTML=`<div class="btnrow-l"><button class="btn danger-outline" id="fNo">Didn't know</button><button class="btn primary" id="fYes">Got it</button></div>`;
+    $("fYes").focus();
+    $("fNo").onclick=()=>{ if(current.answered) return; current.answered=true; $("flashBtns").hidden=true; grade(false); };
+    $("fYes").onclick=()=>{ if(current.answered) return; current.answered=true; $("flashBtns").hidden=true; grade(true); };
+  };
+}
+
 function grade(ok){
-  const {c,type}=current, a=ask(c).a;
+  const {c,type}=current, a=ask(c,current.dir).a;
   current.before={lvl:c.lvl,miss:c.miss};
-  if(ok){ c.lvl++; S.queue.shift(); S.done++; S.rightThisRound++; }
-  else { c.miss++; if(type==="write") c.lvl=1; S.queue.push(S.queue.shift()); }
+  if(ok){ c.lvl=Math.min(2,c.lvl+1); S.queue.shift(); S.done++; S.rightThisRound++; }
+  else { c.miss++; S.queue.push(S.queue.shift()); }
   save(); stats();
-  const fb=$("fb");
+  const fb=$("fb"), nextName={write:"write it",mc:"pick it from choices",flash:"see it as a flashcard"};
   if(ok){
     fb.className="fb good";
-    fb.innerHTML=`<strong>${type==="mc"?"Correct. You'll write this one next time.":"Correct. Mastered."}</strong><div class="row"><button class="btn primary" id="go">Continue</button></div>`;
+    fb.innerHTML=`<strong>${c.lvl===2?"Correct. Mastered.":`Correct. Next time you'll ${nextName[qType(c)]}.`}</strong><div class="row"><button class="btn primary" id="go">Continue</button></div>`;
   } else {
+    const retype=LO().retype && LO().types.write;
     fb.className="fb bad";
     fb.innerHTML=`<strong>Not quite. This one comes back later this round.</strong>
       <div class="ans">Correct answer: <b>${esc(a)}</b></div>
       ${type==="write"&&current.typed?`<div class="ans">You wrote: ${esc(current.typed)}</div>`:""}
-      <div class="row"><button class="btn primary" id="go">Continue</button>${type==="write"&&current.typed?`<button class="link" id="override">I was right</button>`:""}</div>`;
+      ${retype?`<form class="retype" id="rtf"><label class="ans" for="rt">Type the correct answer to continue</label><div class="write"><input id="rt" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(a.length>40?"Retype the answer":a)}"><button class="btn primary">Check</button></div><span class="err-text" id="rtErr" hidden>Not quite. Copy it from above.</span></form>`:""}
+      <div class="row"><button class="btn primary" id="go" ${retype?"hidden":""}>Continue</button>${type==="write"&&current.typed?`<button class="link" id="override">I was right</button>`:""}</div>`;
     const ov=$("override"); if(ov) ov.onclick=override;
+    if(retype){
+      $("rt").focus();
+      $("rtf").onsubmit=e=>{ e.preventDefault(); if(close($("rt").value,a)){ $("rtf").hidden=true; $("go").hidden=false; $("go").focus(); } else $("rtErr").hidden=false; };
+    }
   }
-  $("go").onclick=next; $("go").focus();
+  $("go").onclick=next; if(!$("go").hidden) $("go").focus();
 }
 function override(){
   const {c}=current;
-  c.miss=current.before.miss; c.lvl=2;
+  c.miss=current.before.miss; c.lvl=Math.min(2,current.before.lvl+1);
   S.queue.pop(); S.done++; S.rightThisRound++;
   save(); next();
 }
 
 function checkpoint(){
-  const left=S.cards.filter(c=>c.lvl<2).length;
+  const left=lpool().filter(c=>c.lvl<2).length;
   if(!left){ finish(); return; }
   $("stage").innerHTML=`<div class="card center" style="border:0;padding:0">
     <p class="meta" style="justify-content:center">Checkpoint · Round ${S.roundNo}</p>
@@ -513,9 +586,9 @@ function checkpoint(){
   $("go").onclick=startRound; $("go").focus();
 }
 function finish(){
-  const tough=[...S.cards].sort((a,b)=>b.miss-a.miss).filter(c=>c.miss).slice(0,5);
+  const tough=[...lpool()].sort((a,b)=>b.miss-a.miss).filter(c=>c.miss).slice(0,5);
   $("stage").innerHTML=`<div class="center" style="display:grid;gap:12px">
-    <p class="big">All ${S.cards.length} terms mastered</p>
+    <p class="big">All ${lpool().length}${LO().starred?" starred":""} terms mastered</p>
     <p class="hint">Done in ${S.roundNo} round${S.roundNo>1?"s":""}.</p>
     ${tough.length?`<div style="text-align:left;width:100%"><p class="meta">Most missed</p>${tough.map(c=>`<div>${esc(c.term)} <span class="hint">· missed ${c.miss}×</span></div>`).join("")}</div>`:""}
     <button class="btn primary" id="go">Study again</button></div>`;
@@ -554,7 +627,7 @@ function editor(isNew){
     const old=S;
     if(JSON.stringify(parse(old.text))===JSON.stringify(cards)){ old.name=name; save(); setMode(old.mode||"flashcards",true); return; }
     const ns=makeSet(name,cards.map(c=>c.term+"\t"+c.def).join("\n"),old.id);
-    Object.assign(ns,{folder:old.folder,createdAt:old.createdAt,studiedAt:old.studiedAt,askWith:old.askWith,roundSize:old.roundSize,mode:old.mode,
+    Object.assign(ns,{folder:old.folder,createdAt:old.createdAt,studiedAt:old.studiedAt,askWith:old.askWith,roundSize:old.roundSize,mode:old.mode,learnOpts:old.learnOpts,matchBest:old.matchBest,
       fc:{front:old.fc?.front||"term",shuffle:!!old.fc?.shuffle,track:!!old.fc?.track}});
     const byTerm={}; old.cards.forEach(c=>byTerm[c.term.toLowerCase()]=c);
     ns.cards.forEach(c=>{ const o=byTerm[c.term.toLowerCase()]; if(o){ c.lvl=o.lvl; c.miss=o.miss; c.star=o.star; } });
@@ -564,7 +637,44 @@ function editor(isNew){
 }
 
 function restart(){ S.cards.forEach(c=>{c.lvl=0;c.miss=0}); S.roundNo=0; S.queue=[]; S.inRound=false; save(); startRound(); }
-function resume(){ if(S.inRound && S.queue.length){ S.total=S.total||S.queue.length; next(); } else if(S.cards.every(c=>c.lvl===2)) finish(); else startRound(); }
+function resume(){ const ids=new Set(lpool().map(c=>c.id)); if(S.inRound && S.queue.length && S.queue.every(id=>ids.has(id))){ S.total=S.total||S.queue.length; next(); } else if(lpool().every(c=>c.lvl===2)) finish(); else { if(S.inRound){ S.inRound=false; S.roundNo=Math.max(0,S.roundNo-1); } startRound(); } }
+
+/* Learn options panel */
+function lOptsRender(){
+  const o=LO(), starN=S.cards.filter(c=>c.star).length;
+  document.querySelectorAll('input[name="lAns"]').forEach(r=>r.checked=r.value===(S.askWith||"term"));
+  $("askWith").value=S.askWith||"term";
+  $("lStar").checked=o.starred&&starN>0; $("lStar").disabled=!starN&&!o.starred;
+  $("lStarCount").textContent=starN?`${starN} starred in this set`:"Star cards in Flashcards to use this";
+  $("lShuf").checked=o.shuffle; $("lAudio").checked=o.audio;
+  document.querySelectorAll("[data-ltype]").forEach(x=>x.checked=!!o.types[x.dataset.ltype]);
+  $("lGrade").value=o.grading; $("lGradeHint").textContent=GRADE_HINT[o.grading];
+  $("lRetype").checked=o.retype; $("lRetype").disabled=!o.types.write; $("lRetypeHint").textContent=o.types.write?"After a miss, type the correct answer before moving on":"Turn on Written questions to use this";
+  $("roundSize").value=String(S.roundSize||7);
+  $("lResetWrap").innerHTML='<button class="btn danger-outline" id="resetBtn">Restart</button>'; $("resetBtn").onclick=askRestart;
+}
+function askRestart(){
+  $("lResetWrap").innerHTML='<span class="btnrow-l"><button class="btn danger" id="resetYes">Restart progress</button><button class="btn" id="resetNo">Cancel</button></span>';
+  $("resetYes").onclick=()=>{ restart(); lOptsRender(); }; $("resetNo").onclick=lOptsRender;
+}
+function lOptsWire(){
+  const panel=$("lOpts"), btn=$("lOptBtn");
+  const toggle=open=>{ panel.hidden=!open; btn.setAttribute("aria-expanded",open); if(open) lOptsRender(); };
+  btn.onclick=()=>toggle(panel.hidden); $("lOptDone").onclick=()=>toggle(false);
+  const rerender=()=>{ if(current&&!current.answered) next(); };
+  document.querySelectorAll('input[name="lAns"]').forEach(r=>r.onchange=()=>{ S.askWith=r.value; save(); rerender(); });
+  $("lStar").onchange=e=>{ LO().starred=e.target.checked; save(); lOptsRender(); rebuildRound(); };
+  $("lShuf").onchange=e=>{ LO().shuffle=e.target.checked; save(); rebuildRound(); };
+  $("lAudio").onchange=e=>{ LO().audio=e.target.checked; save(); if(e.target.checked&&current&&!current.answered) speak(ask(current.c,current.dir).q); };
+  document.querySelectorAll("[data-ltype]").forEach(x=>x.onchange=()=>{
+    const t=LO().types; t[x.dataset.ltype]=x.checked;
+    if(!t.flash&&!t.mc&&!t.write){ t[x.dataset.ltype]=true; x.checked=true; $("lTypesHint").textContent="Keep at least one question type on"; return; }
+    $("lTypesHint").textContent="New terms start with the first type you pick, then move on to the next";
+    save(); lOptsRender(); rerender();
+  });
+  $("lGrade").onchange=e=>{ LO().grading=e.target.value; $("lGradeHint").textContent=GRADE_HINT[e.target.value]; save(); };
+  $("lRetype").onchange=e=>{ LO().retype=e.target.checked; save(); };
+}
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 
 
@@ -756,7 +866,7 @@ function setMode(m, first){
   if(m==="flashcards"){ showView("fcView"); fcRender(); }
   else if(m==="match"){ showView("matchView"); matchIntro(); }
   else if(m==="test"){ showView("testView"); testShow(); }
-  else { showView("learnView"); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); }
+  else { showView("learnView"); if(!$("lOpts").hidden) lOptsRender(); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); }
 }
 
 /* ---------------- Flashcards ---------------- */
@@ -1492,7 +1602,7 @@ document.addEventListener("keydown",e=>{
   if(current&&current.type==="mc"&&!current.answered&&/^[1-4]$/.test(e.key)){ const b=$("opt"+(e.key-1)); if(b) b.click(); }
 });
 $("editBtn").onclick=()=>editor(false);
-$("resetBtn").onclick=restart;
+lOptsWire();
 $("askWith").onchange=e=>{S.askWith=e.target.value; save(); if(current&&!current.answered) next();};
 $("roundSize").onchange=e=>{S.roundSize=+e.target.value; save();};
 
