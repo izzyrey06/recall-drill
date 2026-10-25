@@ -1,0 +1,737 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Drill"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
+<title>Recall Drill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: single centered study column; level tracker on top, one question card, answer area below */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --ink:#18202e; --muted:#5d6779; --line:#d6dce6;
+  --accent:#2a4fd6; --accent-ink:#ffffff; --mark:#f2b53a;
+  --good:#1d8a5b; --good-bg:#e3f4ec; --bad:#c23b3b; --bad-bg:#fbe7e7;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111520; --surface:#1a2030; --ink:#e8ecf4; --muted:#9aa4b8; --line:#2c3446;
+  --accent:#7d9bff; --accent-ink:#0d1220; --mark:#f2c25a;
+  --good:#5fd39f; --good-bg:#16302a; --bad:#ff8a8a; --bad-bg:#3a1c22; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111520; --surface:#1a2030; --ink:#e8ecf4; --muted:#9aa4b8; --line:#2c3446;
+  --accent:#7d9bff; --accent-ink:#0d1220; --mark:#f2c25a;
+  --good:#5fd39f; --good-bg:#16302a; --bad:#ff8a8a; --bad-bg:#3a1c22; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.hdr-btns{display:flex;gap:8px;flex-wrap:wrap}
+.sync-btn{display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+.dot.ok{background:var(--good)} .dot.off{background:var(--mark)} .dot.err{background:var(--bad)} .dot.busy{background:var(--accent)}
+.sync-form{display:grid;gap:10px}
+.sync-form input{font:inherit;font-family:var(--mono);font-size:.85rem;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.sync-state{display:flex;gap:10px;align-items:center;font-weight:600}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:.92rem;display:grid;gap:4px}
+.steps b{color:var(--ink)}
+.err-text{color:var(--bad);font-size:.9rem;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;letter-spacing:-.01em}
+h1 span{background:linear-gradient(transparent 62%,var(--mark) 62%)}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:10px 16px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:focus-visible,.opt:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lvl{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.lvl b{display:block;font-family:var(--mono);font-size:1.35rem;font-variant-numeric:tabular-nums}
+.lvl small{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.bar{height:8px;border-radius:99px;background:var(--line);display:flex;overflow:hidden}
+.bar i{display:block;height:100%;transition:width .3s}
+.bar .f{background:var(--mark)} .bar .m{background:var(--good)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:18px}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.prompt{font-family:var(--display);font-weight:600;font-size:1.45rem;line-height:1.3;text-wrap:balance;margin:0;min-width:0;overflow-wrap:anywhere}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.opts{grid-template-columns:1fr}.levels{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.opt{font:inherit;text-align:left;padding:14px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:flex;gap:10px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt kbd{font-family:var(--mono);font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt:disabled{cursor:default}
+.write{display:flex;gap:10px;flex-wrap:wrap}
+.write input{flex:1 1 220px;min-width:0;font:inherit;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.fb{border-radius:12px;padding:14px 16px;display:grid;gap:6px}
+.fb.good{background:var(--good-bg);color:var(--good)} .fb.bad{background:var(--bad-bg);color:var(--bad)}
+.fb .ans{color:var(--ink)}
+.fb .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+.center{text-align:center;justify-items:center}
+.big{font-family:var(--display);font-weight:800;font-size:2rem;margin:0}
+textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+.how{font-size:.9rem;color:var(--muted)} .how summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.how ol{padding-left:20px;margin:8px 0 0}
+.settings{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:.9rem}
+.settings select{font:inherit;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tab{font:inherit;font-weight:600;border:0;background:none;color:var(--muted);padding:8px 14px;border-radius:9px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab:focus-visible,.icon:focus-visible,.round:focus-visible,.flip:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.view{display:grid;gap:18px}
+.fc-top{display:grid;gap:8px}
+.pills{display:flex;justify-content:space-between;gap:8px}
+.pill{font-family:var(--mono);font-size:.85rem;border-radius:99px;padding:3px 12px;border:1.5px solid}
+.pill.bad{color:var(--bad);border-color:var(--bad)} .pill.good{color:var(--good);border-color:var(--good)}
+.flip{position:relative;height:clamp(260px,48vh,440px);perspective:1800px;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;border-radius:22px}
+.flip.dragging .flip-inner{transition:none}
+.flip-inner{position:absolute;inset:0;transition:transform .5s cubic-bezier(.2,.75,.25,1);transform-style:preserve-3d}
+.flip-inner.flipped{transform:rotateX(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px 20px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 40px -26px rgba(16,28,70,.45)}
+.back{transform:rotateX(180deg)}
+.flip-inner.flipped .front,.flip-inner:not(.flipped) .back{pointer-events:none}
+.face-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.side{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--muted)}
+.face-btns{display:flex;gap:2px}
+.icon{width:36px;height:36px;display:grid;place-items:center;border:0;background:none;color:var(--muted);border-radius:10px;cursor:pointer}
+.icon:hover:not(:disabled){background:var(--bg);color:var(--ink)}
+.icon:disabled{opacity:.35;cursor:default}
+.icon svg{width:20px;height:20px}
+.icon.on{color:var(--mark)} .icon.on svg{fill:var(--mark)}
+.icon[aria-pressed="true"]{color:var(--accent);background:var(--bg)}
+.face-text{flex:1;display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:600;font-size:clamp(1.35rem,3.4vw,2.1rem);line-height:1.25;overflow:auto;min-height:0;overflow-wrap:anywhere;text-wrap:balance;padding:0 8px}
+.face-text.long{font-family:var(--body);font-weight:500;font-size:clamp(1.05rem,2.2vw,1.3rem)}
+.swipe-tag{position:absolute;top:18px;z-index:2;font-weight:700;padding:6px 14px;border-radius:99px;opacity:0;pointer-events:none;font-size:.9rem}
+.swipe-tag.k{right:18px;background:var(--good-bg);color:var(--good)} .swipe-tag.l{left:18px;background:var(--bad-bg);color:var(--bad)}
+.fc-controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.fc-controls .tools{justify-self:end;display:flex;gap:2px}
+.nav{display:flex;gap:14px}
+.round{width:60px;height:44px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.round svg{width:22px;height:22px}
+.round:hover:not(:disabled){border-color:var(--accent)}
+.round:disabled{opacity:.35;cursor:default}
+.round.bad{color:var(--bad);border-color:var(--bad)} .round.good{color:var(--good);border-color:var(--good)}
+.switch{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;cursor:pointer}
+.switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .2s}
+.switch input:checked{background:var(--accent)} .switch input:checked::after{left:19px}
+.switch input:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.fc-options{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:.9rem;color:var(--muted)}
+.fc-options select{font:inherit;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.fc-options label{display:flex;gap:6px;align-items:center}
+.fc-edit{display:grid;gap:10px}
+.fc-edit label{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
+.fc-edit textarea{min-height:70px;font-family:var(--body);font-size:1rem}
+.done-stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.done-stats div{background:var(--bg);border-radius:12px;padding:10px 18px;min-width:120px}
+.done-stats b{display:block;font-family:var(--mono);font-size:1.5rem}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+@media (max-width:560px){.fc-controls{grid-template-columns:1fr 1fr}.fc-controls .nav{grid-column:1/-1;grid-row:1;justify-self:center}}
+@media (prefers-reduced-motion:reduce){.flip-inner,.switch input,.switch input::after{transition:none}}
+
+</style>
+
+</head><body><div class="wrap">
+  <header>
+    <h1><span>Recall</span> Drill</h1>
+    <nav class="tabs" role="tablist" aria-label="Study mode">
+      <button class="tab" id="tabFc" role="tab">Flashcards</button>
+      <button class="tab" id="tabLearn" role="tab">Learn</button>
+    </nav>
+    <div class="hdr-btns">
+      <button class="btn sync-btn" id="syncBtn" title="Sync"><span class="dot" id="syncDot"></span><span id="syncLbl">Sync</span></button>
+      <button class="btn" id="editBtn">Edit set</button>
+    </div>
+  </header>
+
+  <section class="view" id="fcView" hidden>
+    <div class="fc-top">
+      <div class="meta"><span id="fcCount">1 / 10</span><span id="fcRound"></span></div>
+      <div class="bar" aria-hidden="true"><i class="m" id="fcBar"></i></div>
+      <div class="pills" id="fcPills" hidden><span class="pill bad" id="fcLearning" title="Still learning">0</span><span class="pill good" id="fcKnown" title="Know">0</span></div>
+    </div>
+
+    <div class="flip" id="flip" tabindex="0" aria-label="Flashcard. Press space to flip.">
+      <span class="swipe-tag l" id="tagL">Still learning</span><span class="swipe-tag k" id="tagK">Know</span>
+      <div class="flip-inner" id="flipInner">
+        <div class="face front">
+          <div class="face-top"><span class="side" id="frontLbl">Term</span><span class="face-btns">
+            <button class="icon" data-act="speak" title="Read aloud"></button><button class="icon" data-act="edit" title="Edit card"></button><button class="icon" data-act="star" title="Star this card"></button></span></div>
+          <div class="face-text" id="frontText"></div>
+        </div>
+        <div class="face back">
+          <div class="face-top"><span class="side" id="backLbl">Definition</span><span class="face-btns">
+            <button class="icon" data-act="speak" title="Read aloud"></button><button class="icon" data-act="edit" title="Edit card"></button><button class="icon" data-act="star" title="Star this card"></button></span></div>
+          <div class="face-text" id="backText"></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="card fc-edit" id="fcEdit" hidden>
+      <label for="editTerm">Term</label><textarea id="editTerm"></textarea>
+      <label for="editDef">Definition</label><textarea id="editDef"></textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="editSave">Save card</button><button class="btn" id="editCancel">Cancel</button></div>
+    </section>
+
+    <section class="card center" id="fcDone" hidden></section>
+
+    <div class="fc-controls" id="fcControls">
+      <label class="switch"><input type="checkbox" id="trackT"> Track progress</label>
+      <div class="nav"><button class="round" id="fcPrev" title="Previous"></button><button class="round" id="fcNext" title="Next"></button></div>
+      <div class="tools">
+        <button class="icon" id="fcUndo" title="Undo (Z)"></button>
+        <button class="icon" id="fcAuto" title="Autoplay" aria-pressed="false"></button>
+        <button class="icon" id="fcShuffle" title="Shuffle" aria-pressed="false"></button>
+      </div>
+    </div>
+
+    <div class="fc-options">
+      <label for="fcFront">Show first <select id="fcFront"><option value="term">Term</option><option value="def">Definition</option></select></label>
+      <label><input type="checkbox" id="fcStarred"> <span id="fcStarredLbl">Starred only</span></label>
+      <button class="link" id="fcRestart">Restart flashcards</button>
+    </div>
+    <p class="hint">Space flips. Arrows move between cards, or sort them when tracking progress. Z undoes. In track mode you can also drag the card left or right.</p>
+  </section>
+
+  <section class="view" id="learnView" hidden>
+    <div class="levels">
+      <div class="lvl"><small>New</small><b id="cNew">0</b></div>
+      <div class="lvl"><small>Familiar</small><b id="cFam">0</b></div>
+      <div class="lvl"><small>Mastered</small><b id="cMas">0</b></div>
+    </div>
+    <div class="bar" aria-hidden="true"><i class="m" id="barM"></i><i class="f" id="barF"></i></div>
+
+    <section class="card" id="stage"></section>
+
+    <div class="settings">
+      <label for="askWith">Answer with</label>
+      <select id="askWith"><option value="term">Term</option><option value="def">Definition</option></select>
+      <label for="roundSize">Per round</label>
+      <select id="roundSize"><option>5</option><option selected>7</option><option>10</option></select>
+      <button class="link" id="resetBtn">Restart Learn</button>
+    </div>
+
+    <details class="how">
+      <summary>How Learn works</summary>
+      <ol>
+        <li>New terms are asked as multiple choice. Right answer moves them to Familiar.</li>
+        <li>Familiar terms come back as a written answer. Right answer makes them Mastered.</li>
+        <li>Miss one and it drops a level and comes back later in the same round.</li>
+        <li>Rounds pull Familiar terms first, then new ones. You finish when every term is Mastered.</li>
+      </ol>
+    </details>
+  </section>
+
+  <section class="card view" id="editView" hidden></section>
+  <section class="card view" id="syncView" hidden></section>
+</div>
+
+<script>
+const SAMPLE = `Timbre\tThe tone color that makes one instrument sound different from another
+Tempo\tThe speed of the beat
+Syncopation\tAccenting a weak beat or offbeat
+Ostinato\tA short musical pattern repeated over and over
+Crescendo\tGradually getting louder
+Polyphony\tTwo or more independent melodies at the same time
+Cadence\tA point of rest or ending in a phrase
+Motive\tThe smallest recognizable musical idea
+Dynamics\tHow loud or soft music is
+Homophony\tOne main melody with chordal accompaniment`;
+
+const KEY = "recall-drill-v1";
+let S;            // state
+let current;      // current question
+
+function parse(text){
+  return text.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    let parts = l.includes("\t") ? l.split("\t") : l.split(/\s+[-–—:]\s+|,\s*/);
+    const term = (parts.shift()||"").trim(), def = parts.join(" ").trim();
+    return term && def ? {term,def} : null;
+  }).filter(Boolean);
+}
+function fresh(text){
+  return {text, cards: parse(text).map((c,i)=>({...c,id:i,lvl:0,miss:0,star:false})), queue:[], roundNo:0, done:0, askWith:"term", roundSize:7, inRound:false, rightThisRound:0, mode:"flashcards", fc:null};
+}
+let quiet=false;
+function save(bump=true){
+  if(bump && !quiet){ S.updatedAt=Date.now(); scheduleSync(); }
+  const j=JSON.stringify(S); try{window.webkit.messageHandlers.store.postMessage(j)}catch(e){} try{localStorage.setItem(KEY,j)}catch(e){}
+}
+function load(){ try{const s=JSON.parse(window.__saved||localStorage.getItem(KEY)); if(s&&s.cards&&s.cards.length) return s}catch(e){} return null }
+
+const $ = id=>document.getElementById(id);
+const shuffle = a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const norm = s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\b(the|a|an|to)\b/g,"").replace(/[^a-z0-9]/g,"");
+function close(a,b){
+  a=norm(a); b=norm(b); if(!b) return false; if(a===b) return true;
+  if(b.length<5) return false;
+  // allow one typo per 6 characters
+  const d=lev(a,b); return d<=Math.floor(b.length/6);
+}
+function lev(a,b){const m=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const t=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return m[b.length]}
+
+const ask = c=> S.askWith==="term" ? {q:c.def,a:c.term} : {q:c.term,a:c.def};
+
+function stats(){
+  const n=S.cards.length, f=S.cards.filter(c=>c.lvl===1).length, m=S.cards.filter(c=>c.lvl===2).length;
+  $("cNew").textContent=n-f-m; $("cFam").textContent=f; $("cMas").textContent=m;
+  $("barM").style.width=(m/n*100)+"%"; $("barF").style.width=(f/n*100)+"%";
+}
+
+function startRound(){
+  const open = S.cards.filter(c=>c.lvl<2);
+  if(!open.length){ finish(); return; }
+  const fam = shuffle(open.filter(c=>c.lvl===1)).sort((a,b)=>b.miss-a.miss);
+  const nw = open.filter(c=>c.lvl===0);
+  const pick = [...fam, ...nw].slice(0, S.roundSize);
+  S.queue = shuffle(pick.map(c=>c.id));
+  S.roundNo++; S.inRound=true; S.done=0; S.total=S.queue.length; S.rightThisRound=0;
+  save(); next();
+}
+
+function next(){
+  stats();
+  if(!S.queue.length){ S.inRound=false; save(); checkpoint(); return; }
+  const c = S.cards[S.queue[0]];
+  current = {c, type: c.lvl===0 ? "mc" : "write"};
+  current.type==="mc" ? renderMC() : renderWrite();
+}
+
+function header(type){
+  return `<div class="meta"><span>Round ${S.roundNo} · ${S.done+1} of ${S.total}</span><span>${type}</span></div>`;
+}
+
+function renderMC(){
+  const {c}=current, {q,a}=ask(c);
+  const pool = shuffle(S.cards.filter(x=>x.id!==c.id)).slice(0,3).map(x=>ask(x).a);
+  const opts = shuffle([a,...pool]);
+  current.opts=opts;
+  $("stage").innerHTML = header("Multiple choice") +
+    `<p class="prompt">${esc(q)}</p><p class="hint">Choose the matching ${S.askWith==="term"?"term":"definition"}</p>
+     <div class="opts">${opts.map((o,i)=>`<button class="opt" id="opt${i}" data-i="${i}"><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join("")}</div>
+     <div id="fb"></div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pickMC(+b.dataset.i));
+}
+function pickMC(i){
+  if(current.answered) return; current.answered=true;
+  const {c}=current, a=ask(c).a, ok=current.opts[i]===a;
+  document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true; if(current.opts[j]===a) b.classList.add("right"); else if(j===i) b.classList.add("wrong")});
+  grade(ok);
+}
+
+function renderWrite(){
+  const {c}=current, {q}=ask(c);
+  $("stage").innerHTML = header("Written") +
+    `<p class="prompt">${esc(q)}</p><p class="hint">Type the ${S.askWith==="term"?"term":"definition"}</p>
+     <form class="write" id="wf"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your answer"><button class="btn primary">Check</button></form>
+     <button class="link" id="dunno" type="button">Don't know</button>
+     <div id="fb"></div>`;
+  const inp=$("ans"); inp.focus();
+  $("wf").onsubmit=e=>{e.preventDefault(); if(current.answered) return; current.answered=true; current.typed=inp.value; inp.disabled=true; $("dunno").hidden=true; grade(close(inp.value, ask(c).a))};
+  $("dunno").onclick=()=>{ if(current.answered) return; current.answered=true; current.typed=""; inp.disabled=true; $("dunno").hidden=true; grade(false)};
+}
+
+function grade(ok){
+  const {c,type}=current, a=ask(c).a;
+  current.before={lvl:c.lvl,miss:c.miss};
+  if(ok){ c.lvl++; S.queue.shift(); S.done++; S.rightThisRound++; }
+  else { c.miss++; if(type==="write") c.lvl=1; S.queue.push(S.queue.shift()); }
+  save(); stats();
+  const fb=$("fb");
+  if(ok){
+    fb.className="fb good";
+    fb.innerHTML=`<strong>${type==="mc"?"Correct. You'll write this one next time.":"Correct. Mastered."}</strong><div class="row"><button class="btn primary" id="go">Continue</button></div>`;
+  } else {
+    fb.className="fb bad";
+    fb.innerHTML=`<strong>Not quite. This one comes back later this round.</strong>
+      <div class="ans">Correct answer: <b>${esc(a)}</b></div>
+      ${type==="write"&&current.typed?`<div class="ans">You wrote: ${esc(current.typed)}</div>`:""}
+      <div class="row"><button class="btn primary" id="go">Continue</button>${type==="write"&&current.typed?`<button class="link" id="override">I was right</button>`:""}</div>`;
+    const ov=$("override"); if(ov) ov.onclick=override;
+  }
+  $("go").onclick=next; $("go").focus();
+}
+function override(){
+  const {c}=current;
+  c.miss=current.before.miss; c.lvl=2;
+  S.queue.pop(); S.done++; S.rightThisRound++;
+  save(); next();
+}
+
+function checkpoint(){
+  const left=S.cards.filter(c=>c.lvl<2).length;
+  if(!left){ finish(); return; }
+  $("stage").innerHTML=`<div class="card center" style="border:0;padding:0">
+    <p class="meta" style="justify-content:center">Checkpoint · Round ${S.roundNo}</p>
+    <p class="big">${S.rightThisRound} of ${S.total} on the first pass</p>
+    <p class="hint">${left} term${left>1?"s":""} still to master. Familiar terms come first next round.</p>
+    <button class="btn primary" id="go">Start round ${S.roundNo+1}</button></div>`;
+  $("go").onclick=startRound; $("go").focus();
+}
+function finish(){
+  const tough=[...S.cards].sort((a,b)=>b.miss-a.miss).filter(c=>c.miss).slice(0,5);
+  $("stage").innerHTML=`<div class="center" style="display:grid;gap:12px">
+    <p class="big">All ${S.cards.length} terms mastered</p>
+    <p class="hint">Done in ${S.roundNo} round${S.roundNo>1?"s":""}.</p>
+    ${tough.length?`<div style="text-align:left;width:100%"><p class="meta">Most missed</p>${tough.map(c=>`<div>${esc(c.term)} <span class="hint">· missed ${c.miss}×</span></div>`).join("")}</div>`:""}
+    <button class="btn primary" id="go">Study again</button></div>`;
+  $("go").onclick=restart;
+}
+
+function editor(){
+  stopAuto(); showView("editView");
+  $("editView").innerHTML=`<div class="meta"><span>Edit set</span><span id="cnt"></span></div>
+    <p class="hint">One term per line. Separate term and definition with a tab (paste straight from a Quizlet export) or " - ".</p>
+    <textarea id="src" spellcheck="false">${esc(S.text)}</textarea>
+    <div class="row" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="saveSet">Save and start</button><button class="btn" id="cancel">Cancel</button></div>`;
+  const src=$("src"), cnt=()=>$("cnt").textContent=parse(src.value).length+" terms"; cnt(); src.oninput=cnt;
+  $("saveSet").onclick=()=>{ const n=parse(src.value).length; if(n<4){$("cnt").textContent="Add at least 4 terms";return}
+    const k={askWith:S.askWith,roundSize:S.roundSize,mode:S.mode,sync:S.sync}; S=Object.assign(fresh(src.value),k); ensureFc(true); save(); setMode(S.mode,true); };
+  $("cancel").onclick=()=>setMode(S.mode);
+}
+
+function restart(){ S.cards.forEach(c=>{c.lvl=0;c.miss=0}); S.roundNo=0; S.queue=[]; S.inRound=false; save(); startRound(); }
+function resume(){ if(S.inRound && S.queue.length){ S.total=S.total||S.queue.length; next(); } else if(S.cards.every(c=>c.lvl===2)) finish(); else startRound(); }
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+
+
+/* ---------------- Views ---------------- */
+function showView(id){ ["fcView","learnView","editView","syncView"].forEach(v=>$(v).hidden=v!==id); }
+function setMode(m, first){
+  stopAuto(); S.mode=m; save(false);
+  $("tabFc").setAttribute("aria-selected", m==="flashcards"); $("tabLearn").setAttribute("aria-selected", m==="learn");
+  if(m==="flashcards"){ showView("fcView"); fcRender(); }
+  else { showView("learnView"); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); }
+}
+
+/* ---------------- Flashcards ---------------- */
+const IC = {
+  star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
+  speak:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 013 3L8 18.5z"/><path d="M13.5 7l3 3"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9a5 5 0 010 10h-2"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7h3c4 0 6 10 10 10h4M3.5 17h3c1.6 0 2.8-1.6 3.8-3.5M13.7 10.5c1-1.9 2.2-3.5 3.8-3.5h3"/><path d="M18 4.5L20.5 7 18 9.5M18 14.5l2.5 2.5-2.5 2.5"/></svg>'
+};
+const F = ()=>S.fc;
+let autoTimer=null, drag=null;
+
+function ensureFc(force){
+  if(!S.fc || force){ S.fc = Object.assign({front:"term",shuffle:false,starredOnly:false,track:false}, force?{front:S.fc?.front||"term",shuffle:S.fc?.shuffle||false,track:S.fc?.track||false}:{}); fcBuild(); return; }
+  S.fc.order = (S.fc.order||[]).filter(id=>S.cards[id]);
+  if(!S.fc.order.length) fcBuild();
+}
+function fcBuild(){
+  const f=F(); let ids=S.cards.filter(c=>!f.starredOnly||c.star).map(c=>c.id);
+  if(!ids.length){ ids=S.cards.map(c=>c.id); f.starredOnly=false; }
+  if(f.shuffle) shuffle(ids);
+  Object.assign(f,{order:ids,i:0,flipped:false,known:[],learning:[],history:[],round:1,total:ids.length});
+  save();
+}
+function fcCard(){ return S.cards[F().order[F().i]]; }
+
+function fcRender(){
+  const f=F(), n=f.order.length, done=f.i>=n;
+  $("fcPills").hidden=!f.track;
+  $("fcLearning").textContent=f.learning.length; $("fcKnown").textContent=f.known.length;
+  $("fcRound").textContent = f.track && f.round>1 ? `Round ${f.round}` : (f.starredOnly?"Starred":"");
+  $("fcCount").textContent = done ? `${n} / ${n}` : `${f.i+1} / ${n}`;
+  $("fcBar").style.width = (n? (done?100:f.i/n*100) : 0)+"%";
+  $("trackT").checked=f.track; $("fcFront").value=f.front;
+  $("fcShuffle").setAttribute("aria-pressed", f.shuffle);
+  const starCount=S.cards.filter(c=>c.star).length;
+  $("fcStarred").checked=f.starredOnly; $("fcStarred").disabled=!starCount&&!f.starredOnly;
+  $("fcStarredLbl").textContent=`Starred only (${starCount})`;
+  $("fcEdit").hidden=true;
+  $("flip").hidden=done; $("fcControls").hidden=done; $("fcDone").hidden=!done;
+  if(done){ fcDone(); return; }
+
+  const c=fcCard(), termFirst=f.front==="term";
+  const ft=termFirst?c.term:c.def, bt=termFirst?c.def:c.term;
+  $("frontLbl").textContent=termFirst?"Term":"Definition"; $("backLbl").textContent=termFirst?"Definition":"Term";
+  $("frontText").textContent=ft; $("frontText").classList.toggle("long", ft.length>90);
+  $("backText").textContent=bt; $("backText").classList.toggle("long", bt.length>90);
+  document.querySelectorAll('[data-act="star"]').forEach(b=>{b.classList.toggle("on",!!c.star);b.setAttribute("aria-pressed",!!c.star);b.title=c.star?"Unstar":"Star this card"});
+  $("flipInner").classList.toggle("flipped", f.flipped);
+
+  const p=$("fcPrev"), x=$("fcNext");
+  if(f.track){ p.innerHTML=IC.x; p.className="round bad"; p.title="Still learning (←)"; p.disabled=false;
+               x.innerHTML=IC.check; x.className="round good"; x.title="Know (→)"; }
+  else { p.innerHTML=IC.left; p.className="round"; p.title="Previous (←)"; p.disabled=f.i===0;
+         x.innerHTML=IC.right; x.className="round"; x.title="Next (→)"; }
+  $("fcUndo").disabled=!f.track||!f.history.length;
+  $("fcAuto").disabled=f.track; $("fcAuto").title=f.track?"Autoplay is off while tracking progress":"Autoplay";
+}
+
+function fcDone(){
+  const f=F(), el=$("fcDone");
+  if(f.track){
+    const l=f.learning.length, k=f.known.length, all=S.cards.length;
+    el.innerHTML=`<p class="big">${l? "Nice work. Keep going." : "You know all of them."}</p>
+      <div class="done-stats"><div><small class="side">Know</small><b style="color:var(--good)">${k}</b></div><div><small class="side">Still learning</small><b style="color:var(--bad)">${l}</b></div><div><small class="side">Cards left</small><b>${l}</b></div></div>
+      <div class="btnrow">${l?`<button class="btn primary" id="fcAgain">Keep reviewing ${l} term${l>1?"s":""}</button>`:""}
+      <button class="btn${l?"":" primary"}" id="fcReset">Restart flashcards</button>
+      <button class="btn" id="fcToLearn">Practice in Learn</button></div>
+      ${f.history.length?'<button class="link" id="fcBack">Back to last card</button>':""}`;
+    if(l) $("fcAgain").onclick=()=>{ const ids=f.learning.slice(); if(f.shuffle) shuffle(ids); Object.assign(f,{order:ids,i:0,flipped:false,learning:[],history:[],round:f.round+1}); save(); fcRender(); };
+    if(f.history.length) $("fcBack").onclick=fcUndo;
+  } else {
+    el.innerHTML=`<p class="big">You went through all ${f.order.length} cards</p>
+      <p class="hint">Turn on Track progress to sort what you know from what you're still learning.</p>
+      <div class="btnrow"><button class="btn primary" id="fcReset">Start over</button><button class="btn" id="fcToLearn">Practice in Learn</button></div>
+      <button class="link" id="fcBack">Back to last card</button>`;
+    $("fcBack").onclick=()=>{ f.i=f.order.length-1; f.flipped=false; save(); fcRender(); };
+  }
+  $("fcReset").onclick=()=>{ fcBuild(); fcRender(); };
+  $("fcToLearn").onclick=()=>setMode("learn");
+}
+
+function fcFlip(){ const f=F(); if(f.i>=f.order.length) return; f.flipped=!f.flipped; $("flipInner").classList.toggle("flipped",f.flipped); save(); }
+function fcGo(d){ const f=F(), n=f.order.length; const i=Math.max(0,Math.min(n,f.i+d)); if(i===f.i) return; f.i=i; f.flipped=false; save(); fcRenderNoAnim(); }
+function fcRenderNoAnim(){ const fi=$("flipInner"); fi.style.transition="none"; fcRender(); void fi.offsetWidth; fi.style.transition=""; }
+function fcSort(known){
+  const f=F(); if(f.i>=f.order.length) return;
+  f.history.push({i:f.i,known}); (known?f.known:f.learning).push(f.order[f.i]);
+  f.i++; f.flipped=false; save(); fcRenderNoAnim();
+}
+function fcUndo(){
+  const f=F(), h=f.history.pop(); if(!h) return;
+  (h.known?f.known:f.learning).pop(); f.i=h.i; f.flipped=false; save(); fcRenderNoAnim();
+}
+function fcLeft(){ F().track? fcSort(false) : fcGo(-1); }
+function fcRight(){ F().track? fcSort(true) : fcGo(1); }
+
+function speak(text){
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=.95; speechSynthesis.speak(u); }catch(e){}
+}
+function visibleText(){ const c=fcCard(); if(!c) return ""; const termFirst=F().front==="term"; return (F().flipped!==termFirst)? c.term : c.def; }
+
+function startAuto(){
+  const f=F(); if(f.track) return;
+  if(f.i>=f.order.length){ f.i=0; f.flipped=false; fcRender(); }
+  $("fcAuto").innerHTML=IC.pause; $("fcAuto").setAttribute("aria-pressed","true");
+  speak(visibleText());
+  autoTimer=setInterval(()=>{
+    const f=F();
+    if(!f.flipped){ fcFlip(); speak(visibleText()); return; }
+    if(f.i>=f.order.length-1){ fcGo(1); stopAuto(); return; }
+    fcGo(1); speak(visibleText());
+  }, 3200);
+}
+function stopAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer=null; try{speechSynthesis.cancel()}catch(e){} } const b=$("fcAuto"); if(b){ b.innerHTML=IC.play; b.setAttribute("aria-pressed","false"); } }
+
+function openCardEdit(){
+  stopAuto(); const c=fcCard(); if(!c) return;
+  $("editTerm").value=c.term; $("editDef").value=c.def; $("fcEdit").hidden=false; $("editTerm").focus();
+}
+function saveCardEdit(){
+  const c=fcCard(), t=$("editTerm").value.trim(), d=$("editDef").value.trim();
+  if(!t||!d){ $("editTerm").focus(); return; }
+  c.term=t.replace(/\s*\n\s*/g," "); c.def=d.replace(/\s*\n\s*/g," ");
+  S.text=S.cards.map(x=>x.term+"\t"+x.def).join("\n"); save(); fcRender();
+}
+
+function fcKey(e){
+  if(!$("fcEdit").hidden) return;
+  const k=e.key;
+  if(k===" "||k==="ArrowUp"||k==="ArrowDown"){ e.preventDefault(); stopAuto(); fcFlip(); }
+  else if(k==="ArrowLeft"){ e.preventDefault(); stopAuto(); fcLeft(); }
+  else if(k==="ArrowRight"){ e.preventDefault(); stopAuto(); fcRight(); }
+  else if(k==="z"||k==="Z"){ fcUndo(); }
+  else if(k==="s"||k==="S"){ const c=fcCard(); if(c){ c.star=!c.star; save(); fcRender(); } }
+}
+
+function fcWire(){
+  $("fcUndo").innerHTML=IC.undo; $("fcAuto").innerHTML=IC.play; $("fcShuffle").innerHTML=IC.shuffle;
+  document.querySelectorAll('[data-act]').forEach(b=>{
+    b.innerHTML=IC[b.dataset.act];
+    b.addEventListener("pointerdown",e=>e.stopPropagation());
+    b.onclick=e=>{ e.stopPropagation(); const c=fcCard(); if(!c) return;
+      const a=b.dataset.act;
+      if(a==="star"){ c.star=!c.star; save(); fcRender(); }
+      if(a==="speak"){ speak(b.closest(".face").querySelector(".face-text").textContent); }
+      if(a==="edit"){ openCardEdit(); }
+    };
+  });
+  $("fcPrev").onclick=()=>{ stopAuto(); fcLeft(); };
+  $("fcNext").onclick=()=>{ stopAuto(); fcRight(); };
+  $("fcUndo").onclick=fcUndo;
+  $("fcAuto").onclick=()=> autoTimer? stopAuto() : startAuto();
+  $("fcShuffle").onclick=()=>{ stopAuto(); const f=F(); f.shuffle=!f.shuffle; fcBuildKeepTrack(); };
+  $("trackT").onchange=e=>{ e.target.blur(); stopAuto(); F().track=e.target.checked; fcBuildKeepTrack(); };
+  $("fcFront").onchange=e=>{ F().front=e.target.value; F().flipped=false; save(); fcRenderNoAnim(); };
+  $("fcStarred").onchange=e=>{ e.target.blur(); stopAuto(); F().starredOnly=e.target.checked; fcBuildKeepTrack(); };
+  $("fcRestart").onclick=()=>{ stopAuto(); fcBuildKeepTrack(); };
+  $("editSave").onclick=saveCardEdit;
+  $("editCancel").onclick=()=>{ $("fcEdit").hidden=true; };
+
+  // click to flip, drag to sort (track) or navigate
+  const fl=$("flip");
+  fl.addEventListener("pointerdown",e=>{ if(e.button!==0) return; drag={x:e.clientX,y:e.clientY,dx:0,id:e.pointerId}; fl.setPointerCapture(e.pointerId); });
+  fl.addEventListener("pointermove",e=>{
+    if(!drag) return; drag.dx=e.clientX-drag.x;
+    if(Math.abs(drag.dx)<6) return;
+    fl.classList.add("dragging");
+    fl.style.transform=`translateX(${drag.dx}px) rotate(${drag.dx/30}deg)`;
+    if(F().track){ $("tagK").style.opacity=Math.max(0,Math.min(1,drag.dx/120)); $("tagL").style.opacity=Math.max(0,Math.min(1,-drag.dx/120)); }
+  });
+  const end=e=>{
+    if(!drag) return; const dx=drag.dx; drag=null;
+    fl.classList.remove("dragging"); fl.style.transform=""; $("tagK").style.opacity=0; $("tagL").style.opacity=0;
+    if(Math.abs(dx)<6){ stopAuto(); fcFlip(); return; }
+    if(Math.abs(dx)>110){ stopAuto(); dx>0 ? (F().track?fcSort(true):fcGo(-1)) : (F().track?fcSort(false):fcGo(1)); }
+  };
+  fl.addEventListener("pointerup",end); fl.addEventListener("pointercancel",()=>{ drag=null; fl.style.transform=""; fl.classList.remove("dragging"); });
+}
+function fcBuildKeepTrack(){ fcBuild(); fcRender(); }
+
+/* ---------------- Sync (private GitHub Gist) ---------------- */
+const GIST_FILE="recall-drill-sync.json", API="https://api.github.com";
+let syncing=false, syncAgain=false, syncTimer=null, syncState={k:"none",msg:""};
+
+function scheduleSync(){ if(!S||!S.sync||!S.sync.token) return; clearTimeout(syncTimer); syncTimer=setTimeout(syncNow,2500); }
+function setSync(k,msg){
+  syncState={k,msg:msg||""};
+  const dot=$("syncDot"), lbl=$("syncLbl");
+  dot.className="dot"+({ok:" ok",off:" off",err:" err",busy:" busy"}[k]||"");
+  lbl.textContent={none:"Sync",ok:"Synced",off:"Offline",err:"Sync error",busy:"Syncing"}[k];
+  if(!$("syncView").hidden) syncPanel();
+}
+async function api(path,opt={}){
+  const r=await fetch(API+path,{...opt,cache:"no-store",headers:{"Authorization":"Bearer "+S.sync.token,"Accept":"application/vnd.github+json","Content-Type":"application/json"}});
+  if(r.status===401) throw new Error("GitHub rejected the token. Make a new one with the gist scope.");
+  if(r.status===404) { const e=new Error("Sync gist not found"); e.code=404; throw e; }
+  if(!r.ok) throw new Error("GitHub returned an error ("+r.status+"). Try again in a minute.");
+  return r.json();
+}
+function outgoing(){ const o=JSON.parse(JSON.stringify(S)); delete o.sync; return JSON.stringify(o); }
+async function gistRead(){
+  const g=await api("/gists/"+S.sync.gistId), f=g.files&&g.files[GIST_FILE];
+  if(!f) return null;
+  let text=f.content;
+  if(f.truncated){ const r=await fetch(f.raw_url,{cache:"no-store"}); text=await r.text(); }
+  try{ const st=JSON.parse(text); return st&&st.cards? st : null }catch(e){ return null }
+}
+async function gistWrite(){ await api("/gists/"+S.sync.gistId,{method:"PATCH",body:JSON.stringify({files:{[GIST_FILE]:{content:outgoing()}}})}); }
+async function gistCreate(){
+  const g=await api("/gists",{method:"POST",body:JSON.stringify({description:"Recall Drill sync (private)",public:false,files:{[GIST_FILE]:{content:outgoing()}}})});
+  S.sync.gistId=g.id;
+}
+function adopt(remote){
+  const sync=S.sync; quiet=true;
+  try{
+    stopAuto(); current=null;
+    const mode=S.mode; S=remote; S.sync=sync; S.mode=mode||remote.mode;
+    S.cards.forEach(c=>{ if(c.star===undefined) c.star=false; });
+    $("askWith").value=S.askWith||"term"; $("roundSize").value=String(S.roundSize||7);
+    ensureFc();
+    const onSync=!$("syncView").hidden, onEdit=!$("editView").hidden;
+    if(!onSync&&!onEdit) setMode(S.mode||"flashcards", true);
+    save(false);
+  } finally { quiet=false; }
+}
+async function syncNow(){
+  if(!S.sync||!S.sync.token||!S.sync.gistId) return;
+  if(!navigator.onLine){ setSync("off"); return; }
+  if(syncing){ syncAgain=true; return; }
+  syncing=true; setSync("busy");
+  try{
+    let remote=null;
+    try{ remote=await gistRead(); }catch(e){ if(e.code===404){ await gistCreate(); } else throw e; }
+    const lu=S.updatedAt||0, ru=remote?(remote.updatedAt||0):-1;
+    if(remote && ru>lu) adopt(remote);
+    else if(!remote || lu>ru) await gistWrite();
+    S.sync.lastSync=Date.now(); save(false); setSync("ok");
+  }catch(e){ setSync(navigator.onLine?"err":"off", e.message); }
+  syncing=false;
+  if(syncAgain){ syncAgain=false; syncNow(); }
+}
+async function connect(token){
+  S.sync={token:token.trim()}; setSync("busy");
+  try{
+    const list=await api("/gists?per_page=100");
+    const found=list.find(g=>g.files&&g.files[GIST_FILE]);
+    if(found){ S.sync.gistId=found.id; const remote=await gistRead(); if(remote) adopt(remote); else await gistWrite(); }
+    else await gistCreate();
+    S.sync.lastSync=Date.now(); save(false); setSync("ok");
+    return found? "pulled":"created";
+  }catch(e){ S.sync=null; save(false); setSync("err",e.message); throw e; }
+}
+function ago(t){ if(!t) return "never"; const s=Math.round((Date.now()-t)/1000); if(s<45) return "just now"; const m=Math.round(s/60); if(m<60) return m+" min ago"; const h=Math.round(m/60); if(h<24) return h+" hr ago"; return new Date(t).toLocaleDateString(); }
+function syncPanel(note){
+  stopAuto(); showView("syncView");
+  const v=$("syncView"), on=S.sync&&S.sync.gistId;
+  if(on){
+    const k=syncState.k;
+    v.innerHTML=`<div class="meta"><span>Sync</span><span>GitHub Gist</span></div>
+      <div class="sync-state"><span class="dot ${({ok:"ok",off:"off",err:"err",busy:"busy"}[k]||"")}"></span>
+        ${k==="busy"?"Syncing…":k==="off"?"You're offline. Changes save here and sync when you're back online.":k==="err"?"Last sync failed.":"Synced "+ago(S.sync.lastSync)}</div>
+      ${k==="err"&&syncState.msg?`<p class="err-text">${esc(syncState.msg)}</p>`:""}
+      ${note?`<p class="hint">${esc(note)}</p>`:""}
+      <p class="hint">Progress, stars and your card set sync between every device connected to the same GitHub account. It syncs a few seconds after each change, when the app opens, and when you come back online. If two devices change things while offline, the most recent one wins.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="syncGo">Sync now</button><button class="btn" id="syncBack">Back to studying</button><button class="link" id="syncOff">Disconnect this device</button></div>`;
+    $("syncGo").onclick=()=>syncNow();
+    $("syncBack").onclick=()=>setMode(S.mode);
+    $("syncOff").onclick=()=>{ S.sync=null; save(false); setSync("none"); syncPanel(); };
+  } else {
+    v.innerHTML=`<div class="meta"><span>Sync</span><span>Not set up</span></div>
+      <p class="hint">Sync keeps your Mac and iPhone in step through a private Gist in your GitHub account. You only do this once per device.</p>
+      <ol class="steps">
+        <li>On github.com, go to <b>Settings → Developer settings → Personal access tokens → Tokens (classic)</b>.</li>
+        <li>Choose <b>Generate new token (classic)</b>, tick only the <b>gist</b> box, set expiration to <b>No expiration</b>, and generate it.</li>
+        <li>Copy the token and paste it below. Use the same token on your other devices.</li>
+      </ol>
+      <form class="sync-form" id="syncForm">
+        <label for="tok" class="side">GitHub token</label>
+        <input id="tok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…">
+        <p class="err-text" id="syncErr" hidden></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="syncConnect">Connect</button><button class="btn" type="button" id="syncBack">Back to studying</button></div>
+      </form>
+      <p class="hint">If this account already has Recall Drill data, connecting downloads it and replaces what's on this device.</p>`;
+    $("syncBack").onclick=()=>setMode(S.mode);
+    $("syncForm").onsubmit=async e=>{
+      e.preventDefault(); const t=$("tok").value; if(!t.trim()) return;
+      if(!navigator.onLine){ $("syncErr").hidden=false; $("syncErr").textContent="You're offline. Connect to the internet to set up sync."; return; }
+      $("syncConnect").disabled=true; $("syncConnect").textContent="Connecting…";
+      try{ const r=await connect(t); syncPanel(r==="pulled"?"Found your existing Recall Drill data and loaded it.":"Connected. This device's data is now saved to GitHub."); }
+      catch(err){ $("syncConnect").disabled=false; $("syncConnect").textContent="Connect"; $("syncErr").hidden=false; $("syncErr").textContent=err.message||"Couldn't reach GitHub."; }
+    };
+  }
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("textarea,select,input:not([type=checkbox])")) return;
+  if(!$("syncView").hidden||!$("editView").hidden) return;
+  if(S.mode==="flashcards"&&!$("fcView").hidden){ fcKey(e); return; }
+  if(S.mode!=="learn") return;
+  if(current&&current.type==="mc"&&!current.answered&&/^[1-4]$/.test(e.key)){ const b=$("opt"+(e.key-1)); if(b) b.click(); }
+});
+$("editBtn").onclick=editor;
+$("resetBtn").onclick=restart;
+$("askWith").onchange=e=>{S.askWith=e.target.value; save(); if(current&&!current.answered) next();};
+$("roundSize").onchange=e=>{S.roundSize=+e.target.value; save();};
+
+S = load() || fresh(SAMPLE);
+S.cards.forEach(c=>{ if(c.star===undefined) c.star=false; });
+$("askWith").value=S.askWith; $("roundSize").value=String(S.roundSize);
+ensureFc(); fcWire();
+$("tabFc").onclick=()=>setMode("flashcards");
+$("tabLearn").onclick=()=>setMode("learn");
+quiet=true; setMode(S.mode||"flashcards", true); quiet=false;
+$("syncBtn").onclick=()=>syncPanel();
+if(S.sync&&S.sync.gistId){ setSync(navigator.onLine?"ok":"off"); syncNow(); }
+window.addEventListener("online",()=>syncNow());
+window.addEventListener("offline",()=>{ if(S.sync&&S.sync.gistId) setSync("off"); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncNow(); });
+setInterval(()=>{ if(document.visibilityState==="visible") syncNow(); }, 60000);
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
+</script>
+
+</body></html>
