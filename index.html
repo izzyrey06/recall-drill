@@ -149,7 +149,9 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 .round.bad{color:var(--bad);border-color:var(--bad)} .round.good{color:var(--good);border-color:var(--good)}
 .round.wide{width:auto;min-width:60px;padding:0 16px;display:flex;gap:6px;align-items:center;justify-content:center}
 .round small{font-family:var(--mono);font-size:.78rem;font-weight:500}
-.srs-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.srs-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.num-in{font:inherit;font-family:var(--mono);width:5.5em;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
+.num-in:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
 .switch{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;cursor:pointer}
 .switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .2s}
 .switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .2s}
@@ -238,7 +240,7 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 
     <div class="fc-options">
       <label class="switch" title="Only show cards that are due, and space out the ones you know"><input type="checkbox" id="srsT"> Spaced repetition</label>
-      <label id="srsNewWrap" hidden>New cards per day <select id="srsNew"><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="0">All</option></select></label>
+      <span id="srsNewWrap" class="srs-row" hidden><label for="srsNew">New cards per day</label><input id="srsNew" class="num-in" type="number" min="0" max="9999" step="1" inputmode="numeric"><span id="srsLeft" class="hint"></span></span>
       <label for="fcFront">Show first <select id="fcFront"><option value="term">Term</option><option value="def">Definition</option></select></label>
       <label><input type="checkbox" id="fcStarred"> <span id="fcStarredLbl">Starred only</span></label>
       <button class="link" id="fcRestart">Restart flashcards</button>
@@ -518,7 +520,8 @@ let autoTimer=null, drag=null;
 
 function ensureFc(force){
   if(!S.fc || force){ const o=S.fc||{}; S.fc = Object.assign({front:"term",shuffle:false,starredOnly:false,track:false,srs:false,newPerDay:20}, force?{front:o.front||"term",shuffle:!!o.shuffle,track:!!o.track,srs:!!o.srs,newPerDay:o.newPerDay??20,newDay:o.newDay,newCount:o.newCount}:{}); fcBuild(); return; }
-  if(S.fc.newPerDay===undefined) S.fc.newPerDay=20;
+  if(S.fc.newPerDay===undefined||S.fc.newPerDay===null) S.fc.newPerDay=20;
+  if(!S.fc.npdNum){ if(S.fc.newPerDay===0) S.fc.newPerDay=9999; S.fc.npdNum=true; }
   S.fc.order = (S.fc.order||[]).filter(id=>S.cards[id]);
   if(S.fc.srs && !S.fc.cram && S.fc.builtDay!==dayStart(Date.now())) fcBuild();
   else if(!S.fc.order.length && !S.fc.srs) fcBuild();
@@ -538,7 +541,9 @@ function schedule(c,known){
 }
 function ivlText(d){ return d<=1?"1 day":d<30?d+" days":d<365?Math.round(d/30)+" mo":Math.round(d/365*10)/10+" yr"; }
 function whenText(t){ const days=Math.round((dayStart(t)-dayStart(Date.now()))/DAY); return days<=0?"later today":days===1?"tomorrow":days<7?"in "+days+" days":new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
-function newLeftToday(f){ if(!f.newPerDay) return Infinity; const used=f.newDay===dayStart(Date.now())?(f.newCount||0):0; return Math.max(0,f.newPerDay-used); }
+function newUsedToday(f){ return f.newDay===dayStart(Date.now())?(f.newCount||0):0; }
+function extraToday(f){ return f.extraDay===dayStart(Date.now())?(f.extra||0):0; }
+function newLeftToday(f){ return Math.max(0,(f.newPerDay??20)+extraToday(f)-newUsedToday(f)); }
 function setDueCount(st){ if(!st.fc||!st.fc.srs) return 0; const now=Date.now(); return st.cards.filter(c=>c.srs&&c.srs.due<=now).length; }
 
 function fcBuild(cram){
@@ -567,7 +572,9 @@ function fcRender(){
   $("fcCount").textContent = !n ? "" : done ? `${n} / ${n}` : `${f.i+1} / ${n}`;
   $("fcBar").style.width = (n? (done?100:f.i/n*100) : 0)+"%";
   $("trackT").checked=f.track||f.srs; $("trackT").disabled=f.srs; $("fcFront").value=f.front;
-  $("srsT").checked=f.srs; $("srsNewWrap").hidden=!f.srs; $("srsNew").value=String(f.newPerDay??20);
+  $("srsT").checked=f.srs; $("srsNewWrap").hidden=!f.srs; if(document.activeElement!==$("srsNew")) $("srsNew").value=String(f.newPerDay??20);
+  if(f.srs){ const unseen=S.cards.filter(c=>!c.srs&&(!f.starredOnly||c.star)).length, used=newUsedToday(f), left=Math.min(newLeftToday(f),unseen);
+    $("srsLeft").textContent= !unseen ? "All cards started" : `${used} studied today · ${left} left`; }
   $("fcShuffle").setAttribute("aria-pressed", f.shuffle);
   const starCount=S.cards.filter(c=>c.star).length;
   $("fcStarred").checked=f.starredOnly; $("fcStarred").disabled=!starCount&&!f.starredOnly;
@@ -606,13 +613,13 @@ function fcDone(){
     const unseen=pool.filter(c=>!c.srs).length, capped=unseen>0&&newLeftToday(f)===0;
     el.innerHTML=`<p class="big">${f.history.length?"You're caught up for today":"Nothing due right now"}</p>
       <div class="done-stats"><div><small class="side">Reviewed</small><b>${f.history.length}</b></div><div><small class="side">Due tomorrow</small><b>${tomorrow}</b></div><div><small class="side">Next 7 days</small><b>${week}</b></div></div>
-      <p class="hint">${upcoming.length?`Next review ${whenText(upcoming[0].srs.due)}.`:""} ${capped?`You've hit today's limit of ${f.newPerDay} new cards. ${unseen} still unseen.`:unseen?`${unseen} new card${unseen>1?"s":""} not started yet.`:""}</p>
+      <p class="hint">${upcoming.length?`Next review ${whenText(upcoming[0].srs.due)}.`:""} ${capped?`You've hit today's limit of ${(f.newPerDay??20)+extraToday(f)} new card${(f.newPerDay??20)+extraToday(f)===1?"":"s"}. ${unseen} still unseen.`:unseen?`${unseen} new card${unseen>1?"s":""} not started yet.`:""}</p>
       <div class="btnrow">${capped?'<button class="btn primary" id="srsMore">Learn 10 more new cards</button>':""}
         <button class="btn${capped?"":" primary"}" id="srsCram">Practice all cards</button>
         <button class="btn" id="fcToLearn">Practice in Learn</button></div>
       <p class="hint">Practice doesn't change your review schedule.</p>
       ${f.history.length?'<button class="link" id="fcBack">Back to last card</button>':""}`;
-    if(capped) $("srsMore").onclick=()=>{ f.newCount=(f.newCount||0)-10; fcBuild(); fcRender(); };
+    if(capped) $("srsMore").onclick=()=>{ const t=dayStart(Date.now()); f.extra=extraToday(f)+10; f.extraDay=t; fcBuild(); fcRender(); };
     $("srsCram").onclick=()=>{ fcBuild(true); fcRender(); };
     $("fcToLearn").onclick=()=>setMode("learn");
     if(f.history.length) $("fcBack").onclick=fcUndo;
@@ -724,7 +731,9 @@ function fcWire(){
   $("fcShuffle").onclick=()=>{ stopAuto(); const f=F(); f.shuffle=!f.shuffle; fcBuildKeepTrack(); };
   $("trackT").onchange=e=>{ e.target.blur(); stopAuto(); F().track=e.target.checked; fcBuildKeepTrack(); };
   $("srsT").onchange=e=>{ e.target.blur(); stopAuto(); F().srs=e.target.checked; fcBuild(false); fcRender(); };
-  $("srsNew").onchange=e=>{ F().newPerDay=+e.target.value; fcBuild(); fcRender(); };
+  $("srsNew").onchange=e=>{ const v=Math.round(Number(e.target.value)); if(!Number.isFinite(v)||v<0){ e.target.value=String(F().newPerDay); return; }
+    F().newPerDay=Math.min(9999,v); e.target.value=String(F().newPerDay); e.target.blur(); fcBuild(); fcRender(); };
+  $("srsNew").onkeydown=e=>{ if(e.key==="Enter") e.target.blur(); };
   $("fcFront").onchange=e=>{ F().front=e.target.value; F().flipped=false; save(); fcRenderNoAnim(); };
   $("fcStarred").onchange=e=>{ e.target.blur(); stopAuto(); F().starredOnly=e.target.checked; fcBuildKeepTrack(); };
   $("fcRestart").onclick=()=>{ stopAuto(); fcBuildKeepTrack(); };
