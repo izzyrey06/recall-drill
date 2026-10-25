@@ -119,6 +119,19 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .score{font-family:var(--display);font-weight:800;font-size:3rem;line-height:1;margin:0}
 .test-bar{position:sticky;bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px -20px rgba(16,28,70,.5)}
 @media (prefers-reduced-motion:reduce){.tile{transition:none}.tile.bad{animation:none}}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.imp-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:10px;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--bg)}
+.imp-status{font-size:.9rem;margin:0;color:var(--muted)} .imp-status.ok{color:var(--good)} .imp-status.bad{color:var(--bad)}
+.prev{display:grid;gap:8px}
+.prev-wrap{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.prev table{width:100%;border-collapse:collapse;font-size:.9rem}
+.prev td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.prev tr:first-child td{border-top:0}
+.prev td:first-child{font-weight:600;width:35%}
+.prev td.n{width:2.5em;color:var(--muted);font-family:var(--mono);font-size:.78rem;font-weight:400}
+.skipped{font-size:.88rem;color:var(--muted);margin:0} .skipped code{font-family:var(--mono);font-size:.82rem;background:var(--bg);padding:1px 6px;border-radius:6px}
 .empty{text-align:center;color:var(--muted);padding:36px 16px;border:1.5px dashed var(--line);border-radius:14px;display:grid;gap:12px;justify-items:center}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
@@ -357,13 +370,15 @@ let R;            // everything: sets, folders, sync settings
 let S=null;       // the set being studied
 let current;      // current question
 
-function parse(text){
-  return text.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
-    let parts = l.includes("\t") ? l.split("\t") : l.split(/\s+[-–—:]\s+|,\s*/);
-    const term = (parts.shift()||"").trim(), def = parts.join(" ").trim();
-    return term && def ? {term,def} : null;
-  }).filter(Boolean);
+// Split one line into term + definition at the first separator found (tab first, comma last)
+const SEPS=["\t"," - "," – "," — "," -- ",": "," = ",", "];
+function cleanLine(l){ return l.replace(/^\s*(?:[-•*▪◦●○■□➢►]|\d{1,3}[.)]|[a-z][.)])\s+/i,"").trim(); }
+function splitLine(l){
+  l=cleanLine(l); if(!l) return null;
+  for(const sp of SEPS){ const i=l.indexOf(sp); if(i>0){ const term=l.slice(0,i).trim(), def=l.slice(i+sp.length).replace(/\t+/g," ").trim(); if(term&&def) return {term,def}; } }
+  return null;
 }
+function parse(text){ return text.split(/\r?\n/).map(splitLine).filter(Boolean); }
 function fresh(text){
   return {text, cards: parse(text).map((c,i)=>({...c,id:i,lvl:0,miss:0,star:false})), queue:[], roundNo:0, done:0, askWith:"term", roundSize:7, inRound:false, rightThisRound:0, mode:"flashcards", fc:null};
 }
@@ -514,22 +529,31 @@ function editor(isNew){
     <label class="side" for="setName">Title</label>
     <input id="setName" class="text-in" maxlength="80" value="${st?esc(st.name):""}" placeholder="e.g. Music Appreciation, Unit 2">
     <label class="side" for="src">Terms</label>
-    <p class="hint">One term per line. Separate term and definition with a tab (paste straight from a Quizlet export) or " - ".</p>
+    <div class="drop" id="drop">
+      <div class="imp-bar"><button class="btn" type="button" id="impBtn">Import from file</button>
+        <input id="impFile" class="vh" type="file" accept=".csv,.tsv,.txt,.md,.xlsx,.docx,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document" tabindex="-1" aria-hidden="true">
+        <span class="hint">CSV, Excel, Word, PDF or text. You can also drag a file here.</span></div>
+      <p class="imp-status" id="impStatus" hidden></p>
+    </div>
+    <p class="hint">One term per line. Separate term and definition with a tab (paste straight from a Quizlet export), " - ", ": " or a comma.</p>
     <textarea id="src" spellcheck="false" placeholder="Tempo - The speed of the beat">${st?esc(st.text):""}</textarea>
+    <div class="imp-bar"><button class="link" id="pairBtn" type="button">Terms and definitions are on separate lines</button></div>
+    <section class="prev" id="prev"></section>
     ${st?'<p class="hint">Terms you keep hold on to their progress and stars. New terms start fresh.</p>':""}
     <div class="row" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="saveSet">${isNew?"Create set":"Save changes"}</button><button class="btn" id="cancel">Cancel</button></div>`;
-  const src=$("src"), cnt=()=>$("cnt").textContent=parse(src.value).length+" terms"; cnt(); src.oninput=cnt;
+  const src=$("src"), cnt=()=>{ $("cnt").textContent=parse(src.value).length+" terms"; renderPreview(src.value); }; cnt(); src.oninput=cnt;
+  wireImport(src, cnt, isNew);
   (isNew?$("setName"):src).focus();
   $("saveSet").onclick=()=>{
-    const cards=parse(src.value); if(cards.length<4){ $("cnt").textContent="Add at least 4 terms"; return; }
+    const cards=parse(src.value); if(cards.length<2){ $("cnt").textContent="Add at least 2 terms"; return; }
     const name=$("setName").value.trim()||"Untitled set";
     if(isNew){
-      const ns=makeSet(name,src.value); if(LU.folder!=="all") ns.folder=LU.folder;
+      const ns=makeSet(name,cards.map(c=>c.term+"\t"+c.def).join("\n")); if(LU.folder!=="all") ns.folder=LU.folder;
       R.sets[ns.id]=ns; ns.updatedAt=Date.now(); save(); openSet(ns.id); return;
     }
     const old=S;
     if(JSON.stringify(parse(old.text))===JSON.stringify(cards)){ old.name=name; save(); setMode(old.mode||"flashcards",true); return; }
-    const ns=makeSet(name,src.value,old.id);
+    const ns=makeSet(name,cards.map(c=>c.term+"\t"+c.def).join("\n"),old.id);
     Object.assign(ns,{folder:old.folder,createdAt:old.createdAt,studiedAt:old.studiedAt,askWith:old.askWith,roundSize:old.roundSize,mode:old.mode,
       fc:{front:old.fc?.front||"term",shuffle:!!old.fc?.shuffle,track:!!old.fc?.track}});
     const byTerm={}; old.cards.forEach(c=>byTerm[c.term.toLowerCase()]=c);
@@ -543,6 +567,178 @@ function restart(){ S.cards.forEach(c=>{c.lvl=0;c.miss=0}); S.roundNo=0; S.queue
 function resume(){ if(S.inRound && S.queue.length){ S.total=S.total||S.queue.length; next(); } else if(S.cards.every(c=>c.lvl===2)) finish(); else startRound(); }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 
+
+/* ---------------- Import from files ---------------- */
+function renderPreview(text){
+  const el=$("prev"); if(!el) return;
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()), cards=[], bad=[];
+  lines.forEach(l=>{ const c=splitLine(l); if(c) cards.push(c); else if(cleanLine(l)) bad.push(cleanLine(l)); });
+  if(!lines.length){ el.innerHTML=""; return; }
+  el.innerHTML=`<div class="meta"><span>Preview</span><span>${cards.length} card${cards.length===1?"":"s"}</span></div>
+    ${cards.length?`<div class="prev-wrap"><table><tbody>${cards.slice(0,200).map((c,i)=>`<tr><td class="n">${i+1}</td><td>${esc(c.term)}</td><td>${esc(c.def)}</td></tr>`).join("")}</tbody></table></div>`:""}
+    ${cards.length>200?`<p class="skipped">Showing the first 200.</p>`:""}
+    ${bad.length?`<p class="skipped">${bad.length} line${bad.length===1?"":"s"} couldn't be split into a term and definition and will be left out: ${bad.slice(0,3).map(b=>`<code>${esc(b.length>50?b.slice(0,50)+"…":b)}</code>`).join(" ")}${bad.length>3?" …":""}</p>`:""}`;
+}
+function wireImport(src, refresh, isNew){
+  const input=$("impFile"), drop=$("drop"), status=$("impStatus");
+  const say=(msg,kind)=>{ status.hidden=false; status.className="imp-status"+(kind?" "+kind:""); status.textContent=msg; };
+  $("impBtn").onclick=()=>input.click();
+  async function take(file){
+    if(!file) return;
+    if(file.size>25e6){ say("That file is over 25 MB. Try a smaller one.","bad"); return; }
+    say(`Reading ${file.name}…`);
+    try{
+      const lines=await readFileLines(file);
+      const usable=lines.filter(l=>splitLine(l)).length;
+      if(!lines.length){ say(`Couldn't find any text in ${file.name}. If it's a scanned PDF or a photo, it has no text to read.`,"bad"); return; }
+      const before=src.value.trim();
+      src.value=(before?before+"\n":"")+lines.join("\n");
+      if(isNew && !$("setName").value.trim()) $("setName").value=file.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim().slice(0,80);
+      refresh();
+      say(usable?`Added ${usable} card${usable===1?"":"s"} from ${file.name}${before?" below your existing terms":""}. Check the preview, then save.`
+                :`Read ${lines.length} lines from ${file.name}, but none had a separator. If each term and definition is on its own line, use “Terms and definitions are on separate lines”.`, usable?"ok":"bad");
+    }catch(err){ say(err.message||`Couldn't read ${file.name}.`,"bad"); }
+  }
+  input.onchange=()=>{ take(input.files[0]); input.value=""; };
+  drop.ondragover=e=>{ e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave=()=>drop.classList.remove("over");
+  drop.ondrop=e=>{ e.preventDefault(); drop.classList.remove("over"); take(e.dataTransfer.files[0]); };
+  src.ondragover=drop.ondragover; src.ondrop=e=>{ if(e.dataTransfer.files.length){ drop.ondrop(e); } };
+  $("pairBtn").onclick=()=>{
+    const ls=src.value.split(/\r?\n/).map(cleanLine).filter(Boolean), out=[];
+    for(let i=0;i<ls.length;i+=2) out.push(ls[i+1]?ls[i]+"\t"+ls[i+1]:ls[i]);
+    src.value=out.join("\n"); refresh(); say(`Paired ${Math.floor(ls.length/2)} terms with the line below each.`,"ok");
+  };
+}
+async function readFileLines(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(ext==="xls"||ext==="doc"||ext==="ppt"||ext==="pptx"||ext==="pages"||ext==="numbers"||ext==="key") throw new Error(`.${ext} files can't be read here. Save it as .xlsx, .docx, PDF or CSV and try again.`);
+  if(ext==="xlsx") return xlsxLines(await file.arrayBuffer());
+  if(ext==="docx") return docxLines(await file.arrayBuffer());
+  if(ext==="pdf") return pdfLines(await file.arrayBuffer());
+  if(/^image\//.test(file.type)) throw new Error("Photos and images don't have text to read. Use a PDF, Word, Excel or text file.");
+  const text=await file.text();
+  return ext==="csv"||ext==="tsv"||(ext!=="md"&&looksDelimited(text)) ? csvLines(text) : tidy(text.split(/\r?\n/));
+}
+const oneLine=v=>String(v??"").replace(/\s+/g," ").trim();
+function looksDelimited(text){ const ls=text.split(/\r?\n/).filter(Boolean).slice(0,10); return ls.length>1 && ls.every(l=>l.includes("\t")) ; }
+// CSV/TSV with quoted fields; picks the delimiter and skips a "term,definition" header
+function csvLines(text){
+  const sample=text.split(/\r?\n/).slice(0,10).join("\n");
+  const count=ch=>(sample.match(new RegExp(ch==="\t"?"\t":"\\"+ch,"g"))||[]).length;
+  const d=["\t",",",";"].sort((a,b)=>count(b)-count(a))[0];
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=ch; continue; }
+    if(ch==='"' && f==="") q=true;
+    else if(ch===d){ row.push(f); f=""; }
+    else if(ch==="\n"||ch==="\r"){ if(ch==="\r"&&text[i+1]==="\n") i++; row.push(f); rows.push(row); row=[]; f=""; }
+    else f+=ch;
+  }
+  if(f||row.length){ row.push(f); rows.push(row); }
+  return pairsToLines(rows);
+}
+function pairsToLines(rows){
+  const out=[];
+  rows.forEach((r,i)=>{
+    const cells=r.map(oneLine).filter(Boolean); if(!cells.length) return;
+    if(i===0 && cells.length>=2 && /^(term|word|front|question|vocab)/i.test(cells[0]) && /^(definition|meaning|back|answer|def)/i.test(cells[1])) return;
+    out.push(cells.length>=2? cells[0]+"\t"+cells.slice(1).join(" ") : cells[0]);
+  });
+  return out;
+}
+// Glue wrapped lines back onto the card above; keep headings so the preview can show them as skipped
+function tidy(lines){
+  const out=[];
+  for(const raw of lines){
+    const l=raw.replace(/\s+$/,""); if(!cleanLine(l)) continue;
+    if(splitLine(l) || !out.length || !splitLine(out[out.length-1]) || /^\s*(?:[-•*▪◦●○■□➢►]|\d{1,3}[.)])\s+/.test(l)) out.push(l.trim());
+    else out[out.length-1]+=" "+l.trim();
+  }
+  return out;
+}
+// Minimal .zip reader for .xlsx/.docx (they're zip files of XML)
+async function unzip(buf, want){
+  const dv=new DataView(buf), out={};
+  let e=buf.byteLength-22; while(e>=0 && dv.getUint32(e,true)!==0x06054b50) e--;
+  if(e<0) throw new Error("This file looks damaged or isn't really an Office file.");
+  let off=dv.getUint32(e+16,true); const n=dv.getUint16(e+10,true), dec=new TextDecoder();
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(off,true)!==0x02014b50) break;
+    const method=dv.getUint16(off+10,true), csize=dv.getUint32(off+20,true), nl=dv.getUint16(off+28,true), xl=dv.getUint16(off+30,true), cl=dv.getUint16(off+32,true), lho=dv.getUint32(off+42,true);
+    const name=dec.decode(new Uint8Array(buf,off+46,nl)); off+=46+nl+xl+cl;
+    if(!want(name)) continue;
+    const start=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true), data=new Uint8Array(buf,start,csize);
+    if(method===0) out[name]=dec.decode(data);
+    else if(method===8){
+      if(typeof DecompressionStream==="undefined") throw new Error("This device can't open Office files here. Save it as CSV or PDF instead.");
+      const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      out[name]=await new Response(stream).text();
+    }
+  }
+  return out;
+}
+const xml=t=>new DOMParser().parseFromString(t,"application/xml");
+async function xlsxLines(buf){
+  const f=await unzip(buf,n=>n==="xl/sharedStrings.xml"||n==="xl/workbook.xml"||n==="xl/_rels/workbook.xml.rels"||/^xl\/worksheets\/sheet\d+\.xml$/.test(n));
+  const shared=f["xl/sharedStrings.xml"]?[...xml(f["xl/sharedStrings.xml"]).getElementsByTagName("si")].map(si=>[...si.getElementsByTagName("t")].map(t=>t.textContent).join("")):[];
+  let sheet=null;
+  try{ // first sheet in workbook order
+    const wb=xml(f["xl/workbook.xml"]), rid=wb.getElementsByTagName("sheet")[0].getAttribute("r:id");
+    const rel=[...xml(f["xl/_rels/workbook.xml.rels"]).getElementsByTagName("Relationship")].find(r=>r.getAttribute("Id")===rid);
+    sheet=f["xl/"+rel.getAttribute("Target").replace(/^\/?xl\//,"")];
+  }catch(e){}
+  sheet=sheet||f[Object.keys(f).filter(k=>/sheet\d+\.xml$/.test(k)).sort()[0]];
+  if(!sheet) throw new Error("Couldn't find a sheet in that Excel file.");
+  const rows=[...xml(sheet).getElementsByTagName("row")].map(r=>[...r.getElementsByTagName("c")].sort((a,b)=>colNum(a.getAttribute("r"))-colNum(b.getAttribute("r"))).map(c=>{
+    const t=c.getAttribute("t"), v=c.getElementsByTagName("v")[0];
+    if(t==="s") return shared[+v?.textContent]||"";
+    if(t==="inlineStr") return [...c.getElementsByTagName("t")].map(x=>x.textContent).join("");
+    if(t==="b") return v?.textContent==="1"?"TRUE":"FALSE";
+    return v?.textContent||"";
+  }));
+  return pairsToLines(rows);
+}
+function colNum(ref){ let n=0; for(const ch of (ref||"").replace(/\d+/g,"")) n=n*26+ch.charCodeAt(0)-64; return n; }
+async function docxLines(buf){
+  const f=await unzip(buf,n=>n==="word/document.xml");
+  if(!f["word/document.xml"]) throw new Error("Couldn't find the text in that Word file.");
+  const W="http://schemas.openxmlformats.org/wordprocessingml/2006/main", doc=xml(f["word/document.xml"]);
+  const body=doc.getElementsByTagNameNS(W,"body")[0], lines=[], rows=[];
+  const ptext=p=>{ let s=""; p.querySelectorAll("*").forEach(n=>{ if(n.namespaceURI!==W) return; if(n.localName==="t") s+=n.textContent; else if(n.localName==="tab") s+="\t"; else if(n.localName==="br") s+=" "; }); return s; };
+  const flush=()=>{ if(rows.length){ lines.push(...pairsToLines(rows.splice(0))); } };
+  for(const node of body.children){
+    if(node.localName==="tbl"){
+      for(const tr of node.getElementsByTagNameNS(W,"tr")) rows.push([...tr.children].filter(c=>c.localName==="tc").map(tc=>[...tc.getElementsByTagNameNS(W,"p")].map(ptext).join(" ")));
+      flush();
+    } else if(node.localName==="p"){ const t=ptext(node).trim(); if(t) lines.push(t); }
+  }
+  return lines; // each Word paragraph is its own line; no joining
+}
+function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Couldn't load the PDF reader. Open the app once while online, then try again.")); document.head.appendChild(s); }); }
+async function pdfLines(buf){
+  if(!window.pdfjsLib){ await loadScript("vendor/pdf.min.js"); await loadScript("vendor/pdf.worker.min.js"); }
+  pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js";
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise, lines=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const items=(await (await pdf.getPage(p)).getTextContent()).items.filter(i=>i.str!==undefined);
+    const rows=[];
+    for(const it of items){
+      if(!it.str.trim()&&!it.hasEOL) continue;
+      const y=it.transform[5], size=Math.hypot(it.transform[2],it.transform[3])||10;
+      let row=rows.find(r=>Math.abs(r.y-y)<size*0.45); if(!row){ row={y,items:[]}; rows.push(row); }
+      row.items.push({x:it.transform[4],w:it.width,s:it.str,size});
+    }
+    rows.sort((a,b)=>b.y-a.y);
+    for(const r of rows){
+      r.items.sort((a,b)=>a.x-b.x); let line="", end=null;
+      for(const it of r.items){ if(end!==null){ const gap=it.x-end; line+= gap>it.size*1.8 ? "\t" : gap>it.size*0.15 ? " " : ""; } line+=it.s; end=it.x+it.w; }
+      if(line.trim()) lines.push(line.replace(/ {2,}/g," "));
+    }
+  }
+  return tidy(lines);
+}
 
 /* ---------------- Views ---------------- */
 function showView(id){
