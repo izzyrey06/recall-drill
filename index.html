@@ -148,6 +148,18 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .seg input{position:absolute;opacity:0;width:1px;height:1px}
 .seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
 .seg label:has(input:focus-visible){outline:3px solid var(--mark);outline-offset:-3px}
+.goal-pick{display:grid;gap:14px}
+.goal-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.goal-cards{grid-template-columns:1fr}}
+.goal{font:inherit;text-align:left;display:grid;gap:8px;align-content:start;padding:18px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.goal:hover{border-color:var(--accent)}
+.goal:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.goal b{font-family:var(--display);font-size:1.2rem;font-weight:700}
+.goal span{color:var(--muted);font-size:.92rem;line-height:1.45}
+.goal i{font-style:normal;font-size:1.6rem;line-height:1}
+.date-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.92rem}
+.date-in{font:inherit;padding:7px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.countdown{font-weight:700;color:var(--accent)}
 .flash-ans{margin:0;padding:14px 16px;background:var(--bg);border-radius:12px;font-weight:600;overflow-wrap:anywhere}
 .retype{display:grid;gap:8px;margin-top:8px}
 .auto-bar{height:4px;border-radius:99px;background:var(--good);opacity:.55;transform-origin:left;animation:autobar var(--auto-ms,1000ms) linear forwards}
@@ -345,6 +357,10 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
     <div class="learn-top"><button class="btn" id="lOptBtn" aria-expanded="false" aria-controls="lOpts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>Options</button></div>
     <section class="card l-opts" id="lOpts" hidden>
       <div class="meta" style="padding-bottom:8px"><span>Learn options</span><button class="link" id="lOptDone">Done</button></div>
+      <div class="opt-row"><span class="lbl"><b>Goal</b><small id="lGoalHint"></small></span>
+        <span class="seg" role="radiogroup" aria-label="Goal"><label><input type="radio" name="lGoal" value="cram"> Cram for a test</label><label><input type="radio" name="lGoal" value="memorize"> Memorize it all</label></span></div>
+      <div class="opt-row" id="lDateRow"><span class="lbl"><b>Test date</b><small id="lDateHint">Optional. Shows a countdown here and in your library</small></span>
+        <span class="date-row"><input type="date" class="date-in" id="lTestDate" aria-label="Test date"><button class="link" id="lDateClear" type="button">Clear</button></span></div>
       <div class="opt-row"><span class="lbl"><b>Answer with</b><small>Which side you have to recall</small></span>
         <span class="seg" role="radiogroup" aria-label="Answer with"><label><input type="radio" name="lAns" value="term"> Term</label><label><input type="radio" name="lAns" value="def"> Definition</label><label><input type="radio" name="lAns" value="both"> Both</label></span>
         <select id="askWith" hidden aria-hidden="true" tabindex="-1"><option value="term">Term</option><option value="def">Definition</option><option value="both">Both</option></select></div>
@@ -362,9 +378,9 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
       <div class="opt-row"><span class="lbl"><b>Restart Learn</b><small>Resets New, Familiar and Mastered for this set</small></span><span id="lResetWrap"><button class="btn danger-outline" id="resetBtn">Restart</button></span></div>
     </section>
     <div class="levels">
-      <div class="lvl"><small>New</small><b id="cNew">0</b></div>
-      <div class="lvl"><small>Familiar</small><b id="cFam">0</b></div>
-      <div class="lvl"><small>Mastered</small><b id="cMas">0</b></div>
+      <div class="lvl"><small id="lblNew">New</small><b id="cNew">0</b></div>
+      <div class="lvl"><small id="lblFam">Familiar</small><b id="cFam">0</b></div>
+      <div class="lvl" id="masBox"><small>Mastered</small><b id="cMas">0</b></div>
     </div>
     <div class="bar" aria-hidden="true"><i class="m" id="barM"></i><i class="f" id="barF"></i></div>
 
@@ -468,14 +484,45 @@ function check(typed,ans){
 }
 const GRADE_HINT={relaxed:"Accepts typos, any one of several listed answers, and answers with the key words in any order",moderate:"Needs the right answer but forgives small typos, accents and words like “the”",strict:"Must match exactly, apart from capitals and punctuation"};
 
+/* Goals: cram = every term right once, mostly multiple choice; memorize = every term right twice (choose, then write) */
+const isCram=()=>LO().goal==="cram";
+const target=()=>isCram()?1:2;
+const GOAL_HINT={cram:"Get through every term fast. A term counts once you get it right.",memorize:"Learn every term for good. Each one needs two right answers: first choosing, then writing."};
+function daysUntil(d){ if(!d) return null; const t=new Date(d+"T00:00:00").getTime(); if(isNaN(t)) return null; return Math.round((t-dayStart(Date.now()))/DAY); }
+function testWhen(d){ const n=daysUntil(d); if(n===null||n<0) return ""; return n===0?"Test today":n===1?"Test tomorrow":`Test in ${n} days`; }
 function stats(){
   const p=lpool(), n=p.length, f=p.filter(c=>c.lvl===1).length, m=p.filter(c=>c.lvl===2).length;
-  $("cNew").textContent=n-f-m; $("cFam").textContent=f; $("cMas").textContent=m;
-  $("barM").style.width=(m/n*100)+"%"; $("barF").style.width=(f/n*100)+"%";
+  if(isCram()){
+    const done=f+m; $("lblNew").textContent="To go"; $("lblFam").textContent="Got right"; $("masBox").hidden=true;
+    $("cNew").textContent=n-done; $("cFam").textContent=done; $("barM").style.width=(done/n*100)+"%"; $("barF").style.width="0%";
+  } else {
+    $("lblNew").textContent="New"; $("lblFam").textContent="Familiar"; $("masBox").hidden=false;
+    $("cNew").textContent=n-f-m; $("cFam").textContent=f; $("cMas").textContent=m;
+    $("barM").style.width=(m/n*100)+"%"; $("barF").style.width=(f/n*100)+"%";
+  }
+}
+function goalPicker(){
+  current=null; stats();
+  const d=LO().testDate||"";
+  $("stage").innerHTML=`<div class="goal-pick">
+    <div class="meta"><span>Learn</span><span>${lpool().length} terms</span></div>
+    <p class="big" style="font-size:1.6rem">What's your goal?</p>
+    <div class="goal-cards">
+      <button class="goal" data-goal="cram"><i aria-hidden="true">⚡</i><b>Cram for a test</b><span>${GOAL_HINT.cram} Mostly multiple choice, bigger rounds.</span></button>
+      <button class="goal" data-goal="memorize"><i aria-hidden="true">🧠</i><b>Memorize it all</b><span>${GOAL_HINT.memorize}</span></button>
+    </div>
+    <div class="date-row"><label for="gDate">Test date (optional, for cramming)</label><input type="date" class="date-in" id="gDate" value="${esc(d)}"></div>
+    <p class="hint" style="margin:0">You can change this any time in Options.</p></div>`;
+  document.querySelectorAll("[data-goal]").forEach(b=>b.onclick=()=>{
+    const o=LO(), g=b.dataset.goal; o.goal=g; o.testDate=$("gDate").value||o.testDate||"";
+    S.roundSize = g==="cram" ? Math.max(S.roundSize||7,10) : (S.roundSize===10?7:S.roundSize||7);
+    $("roundSize").value=String(S.roundSize);
+    S.inRound=false; S.queue=[]; save(); if(!$("lOpts").hidden) lOptsRender(); startRound();
+  });
 }
 
 function startRound(){
-  const open = lpool().filter(c=>c.lvl<2);
+  const open = lpool().filter(c=>c.lvl<target());
   if(!open.length){ finish(); return; }
   const fam = shuffle(open.filter(c=>c.lvl===1)).sort((a,b)=>b.miss-a.miss);
   let nw = open.filter(c=>c.lvl===0); if(LO().shuffle) nw=shuffle(nw);
@@ -496,7 +543,8 @@ function next(){
 }
 const sideName=()=>current.dir==="term"?"term":"definition";
 function header(type){
-  return `<div class="meta"><span>Round ${S.roundNo} · ${S.done+1} of ${S.total}</span><span>${type}</span></div>`;
+  const tw=isCram()?testWhen(LO().testDate):"";
+  return `<div class="meta"><span>Round ${S.roundNo} · ${S.done+1} of ${S.total}${tw?` · <span class="countdown">${tw}</span>`:""}</span><span>${type}</span></div>`;
 }
 
 function renderMC(){
@@ -556,7 +604,7 @@ function grade(ok){
   if(ok){
     const auto=LO().autoNext!==false, ms=type==="write"?1300:1000;
     fb.className="fb good";
-    fb.innerHTML=`<strong>${c.lvl===2?"Correct. Mastered.":`Correct. Next time you'll ${nextName[qType(c)]}.`}</strong>
+    fb.innerHTML=`<strong>${isCram()?"Correct.":c.lvl===2?"Correct. Mastered.":`Correct. Next time you'll ${nextName[qType(c)]}.`}</strong>
       ${auto?`<div class="auto-bar" style="--auto-ms:${ms}ms" aria-hidden="true"></div>`:""}
       <div class="row"><button class="btn primary" id="go" ${auto?"hidden":""}>Continue</button></div>`;
     if(auto){ clearTimeout(learnTimer); learnTimer=setTimeout(goNext,ms); }
@@ -588,23 +636,28 @@ function override(){
 }
 
 function checkpoint(){
-  const left=lpool().filter(c=>c.lvl<2).length;
+  current=null;
+  const left=lpool().filter(c=>c.lvl<target()).length;
   if(!left){ finish(); return; }
+  const tw=isCram()?testWhen(LO().testDate):"";
   $("stage").innerHTML=`<div class="card center" style="border:0;padding:0">
     <p class="meta" style="justify-content:center">Checkpoint · Round ${S.roundNo}</p>
     <p class="big">${S.rightThisRound} of ${S.total} on the first pass</p>
-    <p class="hint">${left} term${left>1?"s":""} still to master. Familiar terms come first next round.</p>
+    <p class="hint">${isCram()?`${left} term${left>1?"s":""} to go.${tw?` <span class="countdown">${tw}.</span>`:""}`:`${left} term${left>1?"s":""} still to master. Familiar terms come first next round.`}</p>
     <button class="btn primary" id="go">Start round ${S.roundNo+1}</button></div>`;
   $("go").onclick=startRound; $("go").focus();
 }
 function finish(){
-  const tough=[...lpool()].sort((a,b)=>b.miss-a.miss).filter(c=>c.miss).slice(0,5);
+  current=null;
+  const tough=[...lpool()].sort((a,b)=>b.miss-a.miss).filter(c=>c.miss).slice(0,5), cram=isCram(), tw=cram?testWhen(LO().testDate):"";
   $("stage").innerHTML=`<div class="center" style="display:grid;gap:12px">
-    <p class="big">All ${lpool().length}${LO().starred?" starred":""} terms mastered</p>
+    <p class="big">${cram?`You've covered all ${lpool().length}${LO().starred?" starred":""} terms`:`All ${lpool().length}${LO().starred?" starred":""} terms mastered`}</p>
+    ${cram?`<p class="hint">${tw?`<span class="countdown">${tw}.</span> `:""}Want them to stick? Switch to Memorize it all, which keeps what you got right and asks each one again in writing.</p>`:""}
     <p class="hint">Done in ${S.roundNo} round${S.roundNo>1?"s":""}.</p>
     ${tough.length?`<div style="text-align:left;width:100%"><p class="meta">Most missed</p>${tough.map(c=>`<div>${esc(c.term)} <span class="hint">· missed ${c.miss}×</span></div>`).join("")}</div>`:""}
-    <button class="btn primary" id="go">Study again</button></div>`;
+    <div class="btnrow">${cram?'<button class="btn primary" id="goMem">Memorize it all</button>':""}<button class="btn${cram?"":" primary"}" id="go">Study again</button></div></div>`;
   $("go").onclick=restart;
+  if(cram) $("goMem").onclick=()=>{ LO().goal="memorize"; if(S.roundSize===10) S.roundSize=7; save(); if(!$("lOpts").hidden) lOptsRender(); rebuildRound(); };
 }
 
 function editor(isNew){
@@ -649,11 +702,17 @@ function editor(isNew){
 }
 
 function restart(){ S.cards.forEach(c=>{c.lvl=0;c.miss=0}); S.roundNo=0; S.queue=[]; S.inRound=false; save(); startRound(); }
-function resume(){ const ids=new Set(lpool().map(c=>c.id)); if(S.inRound && S.queue.length && S.queue.every(id=>ids.has(id))){ S.total=S.total||S.queue.length; next(); } else if(lpool().every(c=>c.lvl===2)) finish(); else { if(S.inRound){ S.inRound=false; S.roundNo=Math.max(0,S.roundNo-1); } startRound(); } }
+function resume(){
+  if(!LO().goal){ if(S.cards.some(c=>c.lvl>0)){ LO().goal="memorize"; save(false); } else { goalPicker(); return; } }
+  const ids=new Set(lpool().map(c=>c.id)); if(S.inRound && S.queue.length && S.queue.every(id=>ids.has(id))){ S.total=S.total||S.queue.length; next(); } else if(lpool().every(c=>c.lvl>=target())) finish(); else { if(S.inRound){ S.inRound=false; S.roundNo=Math.max(0,S.roundNo-1); } startRound(); } }
 
 /* Learn options panel */
 function lOptsRender(){
   const o=LO(), starN=S.cards.filter(c=>c.star).length;
+  document.querySelectorAll('input[name="lGoal"]').forEach(r=>r.checked=r.value===(o.goal||"memorize"));
+  $("lGoalHint").textContent=GOAL_HINT[o.goal||"memorize"];
+  $("lDateRow").hidden=o.goal!=="cram"; $("lTestDate").value=o.testDate||"";
+  $("lDateHint").textContent=testWhen(o.testDate)||"Optional. Shows a countdown here and in your library";
   document.querySelectorAll('input[name="lAns"]').forEach(r=>r.checked=r.value===(S.askWith||"term"));
   $("askWith").value=S.askWith||"term";
   $("lStar").checked=o.starred&&starN>0; $("lStar").disabled=!starN&&!o.starred;
@@ -688,6 +747,12 @@ function lOptsWire(){
   $("lGrade").onchange=e=>{ LO().grading=e.target.value; $("lGradeHint").textContent=GRADE_HINT[e.target.value]; save(); };
   $("lRetype").onchange=e=>{ LO().retype=e.target.checked; save(); };
   $("lAuto").onchange=e=>{ LO().autoNext=e.target.checked; save(); };
+  document.querySelectorAll('input[name="lGoal"]').forEach(r=>r.onchange=()=>{
+    LO().goal=r.value; if(r.value==="cram") S.roundSize=Math.max(S.roundSize||7,10); else if(S.roundSize===10) S.roundSize=7;
+    save(); lOptsRender(); rebuildRound();
+  });
+  $("lTestDate").onchange=e=>{ LO().testDate=e.target.value; save(); lOptsRender(); if(current&&!current.answered) next(); };
+  $("lDateClear").onclick=()=>{ LO().testDate=""; save(); lOptsRender(); if(current&&!current.answered) next(); };
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 
@@ -1399,7 +1464,7 @@ function renderLibrary(){
     return `<article class="set-row">
       <button class="set-open" data-open="${x.id}">
         <span class="set-name">${esc(x.name)}</span>
-        <span class="set-meta">${n} terms · ${m} mastered${st?` · ${st} starred`:""}${(()=>{const d=setDueCount(x);return d?` · <b style="color:var(--accent)">${d} due</b>`:""})()}${fn&&LU.folder==="all"?` · <span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap">${IC.folder}${esc(fn)}</span>`:""}</span>
+        <span class="set-meta">${n} terms · ${m} mastered${st?` · ${st} starred`:""}${(()=>{const d=setDueCount(x);return d?` · <b style="color:var(--accent)">${d} due</b>`:""})()}${(()=>{const o=x.learnOpts; if(!o||o.goal!=="cram") return ""; const t=testWhen(o.testDate); return t?` · <b style="color:var(--accent)">${t}</b>`:""})()}${fn&&LU.folder==="all"?` · <span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap">${IC.folder}${esc(fn)}</span>`:""}</span>
         <span class="minibar" aria-hidden="true"><i style="width:${n?m/n*100:0}%"></i></span>
         <span class="set-when">${x.studiedAt?"Studied "+ago(x.studiedAt):"Not studied yet"}</span>
       </button>
