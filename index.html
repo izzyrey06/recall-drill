@@ -150,6 +150,9 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .seg label:has(input:focus-visible){outline:3px solid var(--mark);outline-offset:-3px}
 .flash-ans{margin:0;padding:14px 16px;background:var(--bg);border-radius:12px;font-weight:600;overflow-wrap:anywhere}
 .retype{display:grid;gap:8px;margin-top:8px}
+.auto-bar{height:4px;border-radius:99px;background:var(--good);opacity:.55;transform-origin:left;animation:autobar var(--auto-ms,1000ms) linear forwards}
+@keyframes autobar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.auto-bar{animation:none;transform:none}}
 .empty{text-align:center;color:var(--muted);padding:36px 16px;border:1.5px dashed var(--line);border-radius:14px;display:grid;gap:12px;justify-items:center}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
@@ -352,6 +355,7 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
         <span class="checks"><label class="check"><input type="checkbox" data-ltype="flash"> Flashcards</label><label class="check"><input type="checkbox" data-ltype="mc"> Multiple choice</label><label class="check"><input type="checkbox" data-ltype="write"> Written</label></span></div>
       <div class="opt-row"><span class="lbl"><b>Grading</b><small id="lGradeHint"></small></span>
         <select id="lGrade" aria-label="Grading"><option value="relaxed">Relaxed</option><option value="moderate">Moderate</option><option value="strict">Strict</option></select></div>
+      <div class="opt-row"><span class="lbl"><b>Auto-advance</b><small>Move on by itself after a correct answer</small></span><label class="switch"><input type="checkbox" id="lAuto" aria-label="Auto-advance after correct answers"></label></div>
       <div class="opt-row"><span class="lbl"><b>Retype answers</b><small id="lRetypeHint">After a miss, type the correct answer before moving on</small></span><label class="switch"><input type="checkbox" id="lRetype" aria-label="Retype missed answers"></label></div>
       <div class="opt-row"><span class="lbl"><b>Questions per round</b></span>
         <select id="roundSize" aria-label="Questions per round"><option>5</option><option selected>7</option><option>10</option><option>15</option><option>20</option></select></div>
@@ -443,7 +447,7 @@ function close(a,b){
 function lev(a,b){const m=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const t=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return m[b.length]}
 
 const ask=(c,d)=>(d||"term")==="term" ? {q:c.def,a:c.term} : {q:c.term,a:c.def};
-function LO(){ S.learnOpts=Object.assign({starred:false,shuffle:false,audio:false,types:{flash:false,mc:true,write:true},grading:"moderate",retype:false}, S.learnOpts||{}); return S.learnOpts; }
+function LO(){ S.learnOpts=Object.assign({starred:false,shuffle:false,audio:false,types:{flash:false,mc:true,write:true},grading:"moderate",retype:false,autoNext:true}, S.learnOpts||{}); return S.learnOpts; }
 function lpool(){ const p=LO().starred?S.cards.filter(c=>c.star):S.cards; return p.length?p:S.cards; }
 function pickDir(){ return S.askWith==="both"?(Math.random()<.5?"term":"def"):(S.askWith||"term"); }
 function qType(c){ const t=LO().types, order=c.lvl===0?["mc","flash","write"]:["write","mc","flash"]; return order.find(k=>t[k])||"mc"; }
@@ -550,8 +554,12 @@ function grade(ok){
   save(); stats();
   const fb=$("fb"), nextName={write:"write it",mc:"pick it from choices",flash:"see it as a flashcard"};
   if(ok){
+    const auto=LO().autoNext!==false, ms=type==="write"?1300:1000;
     fb.className="fb good";
-    fb.innerHTML=`<strong>${c.lvl===2?"Correct. Mastered.":`Correct. Next time you'll ${nextName[qType(c)]}.`}</strong><div class="row"><button class="btn primary" id="go">Continue</button></div>`;
+    fb.innerHTML=`<strong>${c.lvl===2?"Correct. Mastered.":`Correct. Next time you'll ${nextName[qType(c)]}.`}</strong>
+      ${auto?`<div class="auto-bar" style="--auto-ms:${ms}ms" aria-hidden="true"></div>`:""}
+      <div class="row"><button class="btn primary" id="go" ${auto?"hidden":""}>Continue</button></div>`;
+    if(auto){ clearTimeout(learnTimer); learnTimer=setTimeout(goNext,ms); }
   } else {
     const retype=LO().retype && LO().types.write;
     fb.className="fb bad";
@@ -559,17 +567,21 @@ function grade(ok){
       <div class="ans">Correct answer: <b>${esc(a)}</b></div>
       ${type==="write"&&current.typed?`<div class="ans">You wrote: ${esc(current.typed)}</div>`:""}
       ${retype?`<form class="retype" id="rtf"><label class="ans" for="rt">Type the correct answer to continue</label><div class="write"><input id="rt" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(a.length>40?"Retype the answer":a)}"><button class="btn primary">Check</button></div><span class="err-text" id="rtErr" hidden>Not quite. Copy it from above.</span></form>`:""}
-      <div class="row"><button class="btn primary" id="go" ${retype?"hidden":""}>Continue</button>${type==="write"&&current.typed?`<button class="link" id="override">I was right</button>`:""}</div>`;
+      <div class="row"><button class="btn primary" id="go" ${retype?"hidden":""}>Continue</button>${type==="write"&&current.typed?`<button class="link" id="override">I was right</button>`:""}</div>
+      ${retype?"":`<p class="hint" style="margin:0">Press any key or tap Continue.</p>`}`;
     const ov=$("override"); if(ov) ov.onclick=override;
     if(retype){
       $("rt").focus();
       $("rtf").onsubmit=e=>{ e.preventDefault(); if(close($("rt").value,a)){ $("rtf").hidden=true; $("go").hidden=false; $("go").focus(); } else $("rtErr").hidden=false; };
     }
   }
-  $("go").onclick=next; if(!$("go").hidden) $("go").focus();
+  $("go").onclick=goNext; if(!$("go").hidden) $("go").focus();
 }
+let learnTimer=null;
+function goNext(){ clearTimeout(learnTimer); learnTimer=null; next(); }
 function override(){
   const {c}=current;
+  clearTimeout(learnTimer); learnTimer=null;
   c.miss=current.before.miss; c.lvl=Math.min(2,current.before.lvl+1);
   S.queue.pop(); S.done++; S.rightThisRound++;
   save(); next();
@@ -649,6 +661,7 @@ function lOptsRender(){
   $("lShuf").checked=o.shuffle; $("lAudio").checked=o.audio;
   document.querySelectorAll("[data-ltype]").forEach(x=>x.checked=!!o.types[x.dataset.ltype]);
   $("lGrade").value=o.grading; $("lGradeHint").textContent=GRADE_HINT[o.grading];
+  $("lAuto").checked=o.autoNext!==false;
   $("lRetype").checked=o.retype; $("lRetype").disabled=!o.types.write; $("lRetypeHint").textContent=o.types.write?"After a miss, type the correct answer before moving on":"Turn on Written questions to use this";
   $("roundSize").value=String(S.roundSize||7);
   $("lResetWrap").innerHTML='<button class="btn danger-outline" id="resetBtn">Restart</button>'; $("resetBtn").onclick=askRestart;
@@ -674,6 +687,7 @@ function lOptsWire(){
   });
   $("lGrade").onchange=e=>{ LO().grading=e.target.value; $("lGradeHint").textContent=GRADE_HINT[e.target.value]; save(); };
   $("lRetype").onchange=e=>{ LO().retype=e.target.checked; save(); };
+  $("lAuto").onchange=e=>{ LO().autoNext=e.target.checked; save(); };
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 
@@ -852,6 +866,7 @@ async function pdfLines(buf){
 
 /* ---------------- Views ---------------- */
 function showView(id){
+  if(id!=="learnView"){ clearTimeout(learnTimer); learnTimer=null; }
   if(id!=="matchView") stopMatch();
   ["libView","fcView","learnView","matchView","testView","editView","syncView"].forEach(v=>$(v).hidden=v!==id);
   const inSet=["fcView","learnView","matchView","testView"].includes(id);
@@ -866,7 +881,7 @@ function setMode(m, first){
   if(m==="flashcards"){ showView("fcView"); fcRender(); }
   else if(m==="match"){ showView("matchView"); matchIntro(); }
   else if(m==="test"){ showView("testView"); testShow(); }
-  else { showView("learnView"); if(!$("lOpts").hidden) lOptsRender(); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); }
+  else { showView("learnView"); if(!$("lOpts").hidden) lOptsRender(); stats(); if(first||!$("stage").innerHTML) resume(); else if(!S.inRound) resume(); else if(current&&current.answered) goNext(); }
 }
 
 /* ---------------- Flashcards ---------------- */
@@ -1599,6 +1614,10 @@ document.addEventListener("keydown",e=>{
   if(!$("syncView").hidden||!$("editView").hidden||!$("libView").hidden) return;
   if(S.mode==="flashcards"&&!$("fcView").hidden){ fcKey(e); return; }
   if(S.mode!=="learn") return;
+  // after an answer: any key moves on (skips the auto-advance wait, or continues after a miss)
+  if(current&&current.answered&&!["Shift","Control","Alt","Meta","Tab","CapsLock"].includes(e.key)&&!e.metaKey&&!e.ctrlKey){
+    const go=$("go"); if(learnTimer||(go&&!go.hidden&&document.activeElement!==go)){ e.preventDefault(); goNext(); return; }
+  }
   if(current&&current.type==="mc"&&!current.answered&&/^[1-4]$/.test(e.key)){ const b=$("opt"+(e.key-1)); if(b) b.click(); }
 });
 $("editBtn").onclick=()=>editor(false);
