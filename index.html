@@ -270,6 +270,51 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 @media (max-width:560px){.fc-controls{grid-template-columns:1fr 1fr}.fc-controls .nav{grid-column:1/-1;grid-row:1;justify-self:center}}
 @media (prefers-reduced-motion:reduce){.flip-inner,.switch input,.switch input::after{transition:none}}
 
+/* Lectures */
+#lecBtn{display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+#lecBtn.on{border-color:var(--bad);color:var(--bad)}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:var(--bad);display:inline-block;flex:none}
+.rec-dot.live{animation:recpulse 1.4s ease-in-out infinite}
+.rec-dot.paused{background:var(--muted)}
+@keyframes recpulse{50%{opacity:.3}}
+.rec-btn{display:inline-flex;align-items:center;gap:8px}
+.rec-btn .rec-dot{background:currentColor}
+.rec-card{justify-items:center;text-align:center}
+.rec-time{font-family:var(--mono);font-size:clamp(2.6rem,10vw,3.6rem);font-variant-numeric:tabular-nums;line-height:1}
+.rec-title{width:100%;text-align:center;font-family:var(--display);font-weight:600;font-size:1.15rem}
+.meter{width:100%;max-width:320px;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--good);transform-origin:left;transform:scaleX(0);transition:transform .12s}
+.live{max-height:min(46vh,420px);overflow:auto;line-height:1.65;overflow-wrap:anywhere;display:grid;gap:10px}
+.live p{margin:0} .live .interim{color:var(--muted)}
+.notice{margin:0;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:.92rem}
+.notice.bad{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+.notice.ok{background:var(--good-bg);border-color:transparent;color:var(--good)}
+.lec-links{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center}
+.lec-audio{width:100%}
+.lec-tabs{justify-self:start}
+.notes h2{font-family:var(--display);font-weight:800;font-size:1.45rem;margin:0;line-height:1.2;overflow-wrap:anywhere}
+.notes h3{font-family:var(--display);font-weight:600;font-size:1.12rem;margin:4px 0 -8px;overflow-wrap:anywhere}
+.notes ul{margin:0;padding-left:20px;display:grid;gap:6px;overflow-wrap:anywhere}
+.notes-sum{margin:0;padding:12px 14px;background:var(--bg);border-radius:12px}
+.emph{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--accent);background:var(--bg);border-radius:6px;padding:2px 6px;white-space:nowrap}
+.terms{margin:0;display:grid}
+.terms div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.terms div:first-child{border-top:0;padding-top:0}
+.terms dt{font-weight:600;overflow-wrap:anywhere} .terms dd{margin:0;overflow-wrap:anywhere}
+@media (max-width:520px){.terms div{grid-template-columns:1fr;gap:2px}}
+.rq{border-top:1px solid var(--line);padding:10px 0}
+.rq:first-child{border-top:0;padding-top:0}
+.rq summary{cursor:pointer;font-weight:600;overflow-wrap:anywhere}
+.rq p{margin:8px 0 0;color:var(--muted);overflow-wrap:anywhere}
+.tr{gap:12px;line-height:1.65}
+.tr p{margin:0;overflow-wrap:anywhere}
+.ts{font:inherit;font-family:var(--mono);font-size:.76rem;color:var(--accent);background:var(--bg);border:0;border-radius:6px;padding:1px 6px;margin-right:8px;cursor:pointer;vertical-align:1px}
+span.ts,.ts:disabled{color:var(--muted);cursor:default}
+.tr-edit{min-height:45vh;font-family:var(--body);font-size:.95rem;line-height:1.6}
+.busy{display:flex;gap:12px;align-items:center;font-weight:600}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rec-dot.live,.spin{animation:none}.meter i{transition:none}}
 </style>
 
 </head><body><div class="wrap">
@@ -282,6 +327,7 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
       <button class="tab" id="tabTest" role="tab">Test</button>
     </nav>
     <div class="hdr-btns">
+      <button class="btn" id="lecBtn">Lectures</button>
       <button class="btn sync-btn" id="syncBtn" title="Sync"><span class="dot" id="syncDot"></span><span id="syncLbl">Sync</span></button>
       <button class="btn" id="editBtn">Edit set</button>
     </div>
@@ -399,6 +445,7 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
 
   <section class="card view" id="editView" hidden></section>
   <section class="card view" id="syncView" hidden></section>
+  <section class="view" id="lecView" hidden></section>
 </div>
 
 <script>
@@ -933,7 +980,7 @@ async function pdfLines(buf){
 function showView(id){
   if(id!=="learnView"){ clearTimeout(learnTimer); learnTimer=null; }
   if(id!=="matchView") stopMatch();
-  ["libView","fcView","learnView","matchView","testView","editView","syncView"].forEach(v=>$(v).hidden=v!==id);
+  ["libView","fcView","learnView","matchView","testView","editView","syncView","lecView"].forEach(v=>$(v).hidden=v!==id);
   const inSet=["fcView","learnView","matchView","testView"].includes(id);
   $("modeTabs").hidden=!inSet; $("editBtn").hidden=!inSet;
   $("crumb").hidden=!(inSet||(id==="editView"&&S));
@@ -1674,9 +1721,541 @@ function syncPanel(note){
   }
 }
 
+/* ---------------- Lectures: record, transcribe live, turn into notes ---------------- */
+// Lectures live in IndexedDB on this device (audio is too big for localStorage and the sync gist)
+const LDB="recall-drill-lectures", AI_KEY="recall-drill-claude";
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let ldb=null, REC=null, LV={view:"list"};
+
+function lecDb(){
+  if(ldb) return ldb;
+  ldb=new Promise((ok,no)=>{
+    if(!window.indexedDB){ no(new Error("This browser can't store lectures.")); return; }
+    const q=indexedDB.open(LDB,1);
+    q.onupgradeneeded=()=>{ q.result.createObjectStore("lectures",{keyPath:"id"}); q.result.createObjectStore("audio"); };
+    q.onsuccess=()=>ok(q.result); q.onerror=()=>no(q.error||new Error("Couldn't open lecture storage."));
+  });
+  ldb.catch(()=>{ ldb=null; });
+  return ldb;
+}
+async function idb(store,mode,fn){
+  const db=await lecDb();
+  return new Promise((ok,no)=>{
+    const tx=db.transaction(store,mode), r=fn(tx.objectStore(store));
+    tx.oncomplete=()=>ok(r&&r.result); tx.onerror=tx.onabort=()=>no(tx.error||new Error("Couldn't save. Your device may be out of space."));
+  });
+}
+const lecAll=()=>idb("lectures","readonly",s=>s.getAll());
+const lecGet=id=>idb("lectures","readonly",s=>s.get(id));
+const lecPut=x=>idb("lectures","readwrite",s=>s.put(x));
+const audioGet=id=>idb("audio","readonly",s=>s.get(id));
+const audioPut=(id,blob)=>idb("audio","readwrite",s=>s.put(blob,id));
+async function lecDelete(id){ await idb("lectures","readwrite",s=>s.delete(id)); await idb("audio","readwrite",s=>s.delete(id)); }
+function aiKey(){ try{ return localStorage.getItem(AI_KEY)||""; }catch(e){ return ""; } }
+
+function clock(sec){ sec=Math.max(0,Math.floor(sec)); const h=sec/3600|0, m=(sec%3600)/60|0, s=sec%60; return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(s).padStart(2,"0"); }
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const wordCount=lec=>lec.segs.reduce((n,s)=>n+s.text.split(/\s+/).filter(Boolean).length,0);
+const hasTimes=lec=>lec.segs.some(s=>s.t>0);
+const lecDate=t=>new Date(t).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+// Group transcript pieces into paragraphs of about 30 seconds
+function paras(lec){
+  const out=[]; let cur=null;
+  for(const s of lec.segs){ if(!cur||s.t-cur.t>=30||cur.text.length>900){ cur={t:s.t,text:s.text}; out.push(cur); } else cur.text+=" "+s.text; }
+  return out;
+}
+function transcriptText(lec){ const timed=hasTimes(lec); return paras(lec).map(p=>(timed?`[${clock(p.t)}] `:"")+p.text).join("\n\n"); }
+// Read back an edited or pasted transcript: [m:ss] stamps, or Zoom/YouTube .vtt/.srt cues
+function parseTranscript(txt){
+  const segs=[]; let t=0;
+  for(const raw of txt.split(/\r?\n/)){
+    let l=raw.replace(/<[^>]+>/g,"").trim();
+    if(!l||/^WEBVTT/.test(l)||/^\d+$/.test(l)) continue;
+    const cue=l.match(/^((?:\d{1,2}:)?\d{1,2}:\d{2})(?:[.,]\d+)?\s*-->/);
+    if(cue){ t=cue[1].split(":").reduce((a,b)=>a*60+(+b),0); continue; }
+    const m=l.match(/^\[(\d{1,2}(?::\d{2}){1,2})\]\s*/);
+    if(m){ t=m[1].split(":").reduce((a,b)=>a*60+(+b),0); l=l.slice(m[0].length).trim(); }
+    if(l) segs.push({t,text:l});
+  }
+  return segs;
+}
+
+/* Recording */
+const recSec=(r=REC)=>r?(r.elapsed+(r.paused?0:Date.now()-r.runStart))/1000:0;
+async function recStart(){
+  if(REC) return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ LV.msg={msg:"This browser can't use the microphone. Try Chrome, Edge or Safari.",kind:"bad"}; return lecRender(); }
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}}); }
+  catch(e){ LV.msg={msg:e.name==="NotAllowedError"?"Microphone access was blocked. Allow it in your browser's site settings, then try again.":"Couldn't start the microphone: "+(e.message||e.name),kind:"bad"}; return lecRender(); }
+  const lec={id:"l"+uid(),title:"Lecture, "+lecDate(Date.now()),createdAt:Date.now(),duration:0,segs:[],notes:null,mime:"",recording:true};
+  const r=REC={lec,stream,chunks:[],elapsed:0,runStart:Date.now(),paused:false,interim:"",srErr:SR?"":"Live transcription isn't available in this browser (Chrome, Edge and Safari have it). Audio is still recording, and you can add a transcript afterwards."};
+  if(window.MediaRecorder){
+    const mime=["audio/webm;codecs=opus","audio/mp4","audio/webm","audio/ogg;codecs=opus"].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||"";
+    try{
+      r.mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:48000}:undefined);
+      lec.mime=r.mr.mimeType||mime;
+      r.mr.ondataavailable=e=>{ if(e.data&&e.data.size) r.chunks.push(e.data); };
+      r.mr.start(1000);
+    }catch(e){ r.mr=null; }
+  }
+  try{ const AC=window.AudioContext||window.webkitAudioContext; r.ac=new AC(); r.an=r.ac.createAnalyser(); r.an.fftSize=512; r.ac.createMediaStreamSource(stream).connect(r.an); }catch(e){}
+  srStart(r); wakeOn();
+  r.tick=setInterval(recTick,250);
+  r.saver=setInterval(()=>{ r.saves=(r.saves||0)+1; recPersist(r,r.saves%3===0).catch(()=>{}); },20000);
+  lecPut(lec).catch(()=>{});
+  LV={view:"rec"}; lecRender();
+}
+function srStart(r){
+  if(!SR||r.srDead) return;
+  const sr=new SR(), lec=r.lec; r.sr=sr;
+  sr.continuous=true; sr.interimResults=true; sr.lang=navigator.language||"en-US";
+  sr.onresult=e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const res=e.results[i], t=res[0].transcript.trim(); if(!t) continue;
+      if(res.isFinal) lec.segs.push({t:Math.round(recSec(r)),text:t}); else interim+=" "+t;
+    }
+    r.interim=interim.trim(); r.srErr=""; recTranscriptRender();
+  };
+  sr.onerror=e=>{
+    if(e.error==="no-speech"||e.error==="aborted") return;
+    if(e.error==="not-allowed"||e.error==="service-not-allowed") r.srDead=true;
+    r.srErr=r.srDead?"Live transcription isn't allowed in this browser. Audio is still recording, and you can add a transcript afterwards."
+      :e.error==="network"?"Live transcription needs an internet connection. Audio is still recording; transcription picks up again when you're back online."
+      :e.error==="audio-capture"?"Live transcription can't hear the microphone. Audio is still recording."
+      :"Live transcription hiccuped ("+e.error+"). Trying again…";
+    recTranscriptRender();
+  };
+  // Browsers end recognition after silences or about a minute, so keep restarting it while recording
+  sr.onend=()=>{
+    if(REC!==r||r.sr!==sr||r.paused) return;
+    if(r.interim){ lec.segs.push({t:Math.round(recSec(r)),text:r.interim}); r.interim=""; }
+    setTimeout(()=>{ if(REC===r&&r.sr===sr&&!r.paused) try{ sr.start(); }catch(e){} },r.srErr?2500:250);
+  };
+  try{ sr.start(); }catch(e){}
+}
+async function recPersist(r,withAudio){
+  r.lec.duration=Math.round(recSec(r));
+  await lecPut(r.lec);
+  if(withAudio&&r.chunks.length) await audioPut(r.lec.id,new Blob(r.chunks,{type:r.lec.mime||r.chunks[0].type||"audio/webm"}));
+}
+function recPause(){
+  const r=REC; if(!r||r.stopping) return;
+  if(!r.paused){
+    r.elapsed+=Date.now()-r.runStart; r.paused=true;
+    try{ if(r.mr&&r.mr.state==="recording") r.mr.pause(); }catch(e){}
+    const sr=r.sr; r.sr=null; if(sr) try{ sr.stop(); }catch(e){}
+  } else {
+    r.runStart=Date.now(); r.paused=false;
+    try{ if(r.mr&&r.mr.state==="paused") r.mr.resume(); }catch(e){}
+    srStart(r);
+  }
+  recRender();
+}
+async function recStop(){
+  const r=REC; if(!r||r.stopping) return;
+  r.stopping=true;
+  if(!r.paused){ r.elapsed+=Date.now()-r.runStart; r.paused=true; }
+  clearInterval(r.saver); recRender();
+  const sr=r.sr; r.sr=null;   // let the last words come in before closing up
+  if(sr) await new Promise(ok=>{ const t=setTimeout(ok,1500); sr.addEventListener("end",()=>{ clearTimeout(t); ok(); },{once:true}); try{ sr.stop(); }catch(e){ clearTimeout(t); ok(); } });
+  if(r.interim){ r.lec.segs.push({t:Math.round(recSec(r)),text:r.interim}); r.interim=""; }
+  if(r.mr&&r.mr.state!=="inactive") await new Promise(ok=>{ r.mr.addEventListener("stop",ok,{once:true}); try{ r.mr.stop(); }catch(e){ ok(); } });
+  clearInterval(r.tick);
+  r.stream.getTracks().forEach(t=>t.stop()); try{ if(r.ac) r.ac.close(); }catch(e){}
+  wakeOff(r);
+  r.lec.recording=false; REC=null;
+  const btn=$("lecBtn"); btn.classList.remove("on"); btn.textContent="Lectures";
+  if(LV.url) URL.revokeObjectURL(LV.url);
+  const blob=r.chunks.length?new Blob(r.chunks,{type:r.lec.mime||r.chunks[0].type||"audio/webm"}):null;
+  LV={view:"detail",id:r.lec.id,lec:r.lec,tab:"notes",blob,blobId:r.lec.id};
+  try{ await recPersist(r,true); }
+  catch(e){ LV.nerr="Couldn't save this lecture on your device ("+(e.message||"storage error")+"). Download the audio and copy the transcript so you don't lose them."; }
+  await lecRender();
+  if(aiKey()&&wordCount(r.lec)>=30&&!LV.nerr) lecMakeNotes(r.lec,false);
+}
+async function wakeOn(){
+  const r=REC;
+  try{ if(r&&!r.wake&&navigator.wakeLock&&document.visibilityState==="visible"){ r.wake=await navigator.wakeLock.request("screen"); r.wake.addEventListener("release",()=>{ r.wake=null; }); } }catch(e){}
+}
+function wakeOff(r){ try{ if(r.wake) r.wake.release(); }catch(e){} }
+function recTick(){
+  const r=REC; if(!r) return;
+  const t=clock(recSec()), el=$("recTime"); if(el) el.textContent=t;
+  const btn=$("lecBtn"); btn.classList.add("on"); btn.innerHTML=`<span class="rec-dot ${r.paused?"paused":"live"}"></span>${t}`;
+  const lvl=$("recLvl");
+  if(lvl&&r.an){ const a=new Uint8Array(r.an.fftSize); r.an.getByteTimeDomainData(a); let p=0; for(const v of a) p=Math.max(p,Math.abs(v-128)/128); lvl.style.transform=`scaleX(${r.paused?0:Math.min(1,p*1.8)})`; }
+}
+function recRender(){
+  const r=REC, v=$("lecView"); if(!r||v.hidden||LV.view!=="rec") return;
+  v.innerHTML=`<div class="lec-links"><button class="link" data-act="list">← Lectures</button></div>
+    <section class="card rec-card">
+      <div class="meta" style="width:100%"><span>${r.stopping?"Saving":r.paused?"Paused":"Recording"}</span><span>${r.mr?"Audio and transcript":"Transcript only"}</span></div>
+      <span class="rec-time" id="recTime">${clock(recSec())}</span>
+      <div class="meter" aria-hidden="true"><i id="recLvl"></i></div>
+      <input id="recTitle" class="text-in rec-title" maxlength="80" value="${esc(r.lec.title)}" aria-label="Lecture title">
+      <div class="btnrow"><button class="btn" data-act="pause" ${r.stopping?"disabled":""}>${r.paused?"Resume":"Pause"}</button><button class="btn primary" data-act="stop" ${r.stopping?"disabled":""}>${r.stopping?"Saving…":"Stop and save"}</button></div>
+      <p class="hint">Keep this page open while you record. The screen stays on where your browser allows it, and the recording saves itself as you go.</p>
+    </section>
+    <section class="card"><div class="meta"><span>Live transcript</span><span id="recWords"></span></div>
+      <div class="live" id="recLive"></div>
+      <p class="notice bad" id="recErr" hidden></p>
+    </section>`;
+  recTranscriptRender(); recTick();
+}
+function recTranscriptRender(){
+  const r=REC, box=$("recLive"); if(!r||!box) return;
+  const near=box.scrollHeight-box.scrollTop-box.clientHeight<60, ps=paras(r.lec), shown=ps.slice(-30);
+  box.innerHTML=(ps.length>shown.length?`<p class="hint">Earlier parts are saved. You'll see the whole transcript after you stop.</p>`:"")+
+    shown.map(p=>`<p><span class="ts">${clock(p.t)}</span>${esc(p.text)}</p>`).join("")+
+    (r.interim?`<p class="interim">${esc(r.interim)}</p>`:"")+
+    (!ps.length&&!r.interim?`<p class="hint">${SR?"Words show up here as they're heard.":"No live transcript in this browser."}</p>`:"");
+  if(near) box.scrollTop=box.scrollHeight;
+  $("recWords").textContent=wordCount(r.lec)+" words";
+  const er=$("recErr"); er.hidden=!r.srErr; er.textContent=r.srErr||"";
+}
+
+/* Notes */
+const NOTES_SCHEMA={type:"object",additionalProperties:false,required:["title","summary","sections","key_terms","review_questions"],properties:{
+  title:{type:"string"},
+  summary:{type:"string"},
+  sections:{type:"array",items:{type:"object",additionalProperties:false,required:["heading","points"],properties:{heading:{type:"string"},points:{type:"array",items:{type:"string"}}}}},
+  key_terms:{type:"array",items:{type:"object",additionalProperties:false,required:["term","definition"],properties:{term:{type:"string"},definition:{type:"string"}}}},
+  review_questions:{type:"array",items:{type:"object",additionalProperties:false,required:["question","answer"],properties:{question:{type:"string"},answer:{type:"string"}}}}
+}};
+const NOTES_SYSTEM=`You turn lecture transcripts into study notes for a student. Transcripts usually come from live speech recognition, so expect misheard words, missing punctuation and no speaker labels. Use context to recover what the lecturer meant, especially technical terms and names. Skip small talk, logistics and false starts unless they matter for the course, like a test date or an assignment.
+
+Write notes the student can study from without the recording:
+- title: a short title naming the lecture's topic.
+- summary: 2 to 4 sentences on what the lecture covered and its main takeaway.
+- sections: follow the lecture's own order, one section per topic. Points are concise, self-contained bullets with the specifics: definitions, examples, formulas, dates, steps, causes and effects. End a point with "(emphasized)" when the lecturer stressed it or said it will be on a test.
+- key_terms: the important terms, people and concepts, each with a one-sentence definition based on how the lecture used it. These become flashcards, so keep each definition short and understandable on its own.
+- review_questions: 5 to 10 questions that check understanding of the main ideas, each with a brief answer.
+
+Only include what the lecture said. If part of the transcript is too garbled to follow, keep that part brief rather than filling it in from general knowledge.`;
+async function claudeNotes(text,key,signal,progress){
+  let res;
+  try{
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:{
+      "content-type":"application/json","x-api-key":key,"anthropic-version":"2026-10-21",
+      "anthropic-beta":"server-side-fallback-2026-07-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-opus-5-5",max_tokens:32000,stream:true,fallbacks:"default",
+        output_config:{effort:"medium",format:{type:"json_schema",schema:NOTES_SCHEMA}},
+        system:NOTES_SYSTEM,messages:[{role:"user",content:`<transcript>\n${text}\n</transcript>\n\nWrite study notes for this lecture.`}]})});
+  }catch(e){ if(e.name==="AbortError") throw e; throw new Error("Couldn't reach Claude. Check your internet connection and try again."); }
+  if(!res.ok){
+    let msg=""; try{ const j=await res.json(); msg=j.error&&j.error.message; }catch(e){}
+    throw new Error(res.status===401?"Claude didn't accept your API key. Check it in Notes settings."
+      :res.status===429?"Your Anthropic account hit a rate or spending limit. Wait a minute, or check your plan at console.anthropic.com."
+      :res.status>=500?"Claude is overloaded right now. Try again in a minute."
+      :msg||`Claude returned an error (${res.status}).`);
+  }
+  const rd=res.body.getReader(), dec=new TextDecoder(); let buf="", out="", stop=null;
+  for(;;){
+    const {done,value}=await rd.read(); if(done) break;
+    buf+=dec.decode(value,{stream:true}).replace(/\r\n/g,"\n");
+    let i;
+    while((i=buf.indexOf("\n\n"))>=0){
+      const data=buf.slice(0,i).split("\n").filter(l=>l.startsWith("data:")).map(l=>l.slice(5).trim()).join("\n"); buf=buf.slice(i+2);
+      if(!data) continue;
+      let ev; try{ ev=JSON.parse(data); }catch(e){ continue; }
+      if(ev.type==="content_block_delta"&&ev.delta&&ev.delta.type==="text_delta"){ out+=ev.delta.text; progress(out); }
+      else if(ev.type==="message_delta"&&ev.delta&&ev.delta.stop_reason) stop=ev.delta.stop_reason;
+      else if(ev.type==="error") throw new Error((ev.error&&ev.error.message)||"Claude stopped with an error. Try again.");
+    }
+  }
+  if(stop==="refusal") throw new Error("Claude declined to make notes from this transcript.");
+  if(stop==="max_tokens") throw new Error("The notes ran too long to finish. Try splitting the transcript into parts.");
+  try{ const n=JSON.parse(out); if(n&&Array.isArray(n.sections)) return n; }catch(e){}
+  throw new Error("The notes came back incomplete. Try again.");
+}
+// Offline fallback: pick out the most content-heavy lines, plus definitions the lecturer said out loud
+const FILLER=new Set("a an the and or but if then so of to in on at by for with from as is are was were be been being it its it's this that these those there here we you i he she they them our your their my me us do does did not no yes can could will would should may might must just also very really about into over than too only what which who whom when where why how all any some more most such up out going gonna like okay ok um uh yeah right know think thing things get got have has had one two lot kind sort basically actually".split(" "));
+function quickNotes(lec){
+  const units=[]; let cur=null;
+  for(const s of lec.segs) for(const part of s.text.split(/(?<=[.!?])\s+/)){
+    if(!cur) cur={t:s.t,text:part}; else cur.text+=" "+part;
+    if(cur.text.split(/\s+/).length>=12){ units.push(cur); cur=null; }
+  }
+  if(cur) units.push(cur);
+  const toks=s=>s.toLowerCase().match(/[a-z][a-z'-]{2,}/g)||[], freq={};
+  units.forEach(u=>toks(u.text).forEach(w=>{ if(!FILLER.has(w)) freq[w]=(freq[w]||0)+1; }));
+  const score=u=>{ const all=toks(u.text), w=all.filter(x=>!FILLER.has(x)); return (w.reduce((a,x)=>a+Math.log(1+freq[x]),0)/Math.sqrt(all.length+1))+(/\b(important|remember|key|exam|test|defin\w*)\b/i.test(u.text)?3:0); };
+  const keep=Math.max(3,Math.min(40,Math.round(units.length*.2)));
+  const best=new Set(units.map((u,i)=>[score(u),i]).sort((a,b)=>b[0]-a[0]).slice(0,keep).map(x=>x[1]));
+  const span=hasTimes(lec)?600:0, sections=[];
+  units.forEach((u,i)=>{
+    if(!best.has(i)) return;
+    const k=span?Math.floor(u.t/span):0, heading=span?`${clock(k*span)} – ${clock(Math.min(Math.max(lec.duration,u.t),(k+1)*span))}`:"Key points";
+    let sec=sections[sections.length-1]; if(!sec||sec.heading!==heading){ sec={heading,points:[]}; sections.push(sec); }
+    sec.points.push(cap(u.text.trim()));
+  });
+  const terms=[], seen=new Set();
+  for(const m of lec.segs.map(x=>x.text).join("\n").matchAll(/\b((?:[a-z][\w'-]* ){0,2}[a-z][\w'-]*) +(?:is defined as|refers to|is known as|means) +([^.?!\n]{8,160})/gi)){
+    const w=m[1].split(/\s+/); while(w.length&&FILLER.has(w[0].toLowerCase())) w.shift();
+    if(!w.length||FILLER.has(w[w.length-1].toLowerCase())) continue;
+    const term=w.join(" "); if(seen.has(term.toLowerCase())) continue; seen.add(term.toLowerCase());
+    terms.push({term:cap(term),definition:cap(m[2].trim().split(/\s+/).slice(0,20).join(" "))});
+  }
+  return {title:lec.title,summary:"",sections,key_terms:terms.slice(0,30),review_questions:[],quick:true};
+}
+async function lecMakeNotes(lec,quick){
+  if(!lec||LV.busy) return;
+  LV.nerr=null;
+  if(wordCount(lec)<30){ LV.nerr="The transcript is too short to make notes from. Add more on the Transcript tab."; return lecBody(); }
+  const key=aiKey();
+  if(quick||!key){
+    lec.notes=quickNotes(lec);
+    try{ await lecPut(lec); }catch(e){ LV.nerr=e.message; }
+    return lecBody();
+  }
+  const ctrl=new AbortController(), started=Date.now(), busy=LV.busy={id:lec.id,ctrl,msg:"Reading the transcript…"};
+  const show=()=>{ const p=$("notesProg"); if(p) p.textContent=busy.msg; };
+  lecBody();
+  const tick=setInterval(()=>{ if(!busy.writing){ busy.msg=`Reading the transcript… ${Math.round((Date.now()-started)/1000)}s`; show(); } },1000);
+  try{
+    const notes=await claudeNotes(transcriptText(lec),key,ctrl.signal,out=>{ busy.writing=true; busy.msg=`Writing notes… ${out.split(/\s+/).length} words`; show(); });
+    lec.notes=notes;
+    if(!lec.titled&&notes.title) lec.title=notes.title.slice(0,80);
+    await lecPut(lec);
+  }catch(e){ if(e.name!=="AbortError") LV.nerr=e.message||"Couldn't make notes."; }
+  finally{ clearInterval(tick); if(LV.busy===busy) LV.busy=null; }
+  if(LV.view==="detail"&&LV.id===lec.id){ const t=$("lecTitle"); if(t&&document.activeElement!==t) t.value=lec.title; lecBody(); }
+}
+function notesMd(lec){
+  const n=lec.notes; let m=`# ${n.title||lec.title}\n\n`;
+  if(n.summary) m+=n.summary+"\n\n";
+  n.sections.forEach(s=>{ m+=`## ${s.heading}\n\n`+s.points.map(p=>"- "+p).join("\n")+"\n\n"; });
+  if(n.key_terms.length) m+="## Key terms\n\n"+n.key_terms.map(k=>`- **${k.term}**: ${k.definition}`).join("\n")+"\n\n";
+  if(n.review_questions.length) m+="## Review questions\n\n"+n.review_questions.map((q,i)=>`${i+1}. ${q.question}\n   - ${q.answer}`).join("\n")+"\n";
+  return m;
+}
+function lecToSet(lec,withQs){
+  const n=lec.notes, clean=s=>String(s).replace(/\s+/g," ").trim();
+  const lines=n.key_terms.map(k=>clean(k.term)+"\t"+clean(k.definition));
+  if(withQs) lines.push(...n.review_questions.map(q=>clean(q.question)+"\t"+clean(q.answer)));
+  editor(true);
+  $("setName").value=(n.title||lec.title).slice(0,80); $("src").value=lines.join("\n"); $("src").oninput();
+}
+async function copyText(t,b){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); }catch(_){ } ta.remove(); }
+  const o=b.textContent; b.textContent="Copied"; setTimeout(()=>{ b.textContent=o; },1500);
+}
+function download(text,name,type){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const fileName=s=>(s||"lecture").replace(/[\\/:*?"<>|]+/g,"").trim().slice(0,60)||"lecture";
+
+/* Screens */
+function goLectures(){
+  stopAuto(); current=null;
+  if(S){ S=null; R.activeId=null; save(false); }
+  showView("lecView"); LV.view=REC?"rec":"list"; LV.confirm=false; lecRender();
+}
+async function lecRender(){
+  if($("lecView").hidden) return;
+  if(LV.view==="rec"&&REC) return recRender();
+  if(LV.view==="detail") return lecDetail();
+  if(LV.view==="key") return keyPanel();
+  if(LV.view==="paste") return pastePanel();
+  LV.view="list"; return lecList();
+}
+function lecMsg(){ const m=LV.msg; LV.msg=null; return m?`<p class="notice ${m.kind||""}">${esc(m.msg)}</p>`:""; }
+async function lecList(){
+  const v=$("lecView"); let items=[], err="";
+  try{ items=await lecAll(); }catch(e){ err=e.message; }
+  // a recording that was cut off (closed tab, crash) keeps whatever saved before it stopped
+  for(const x of items) if(x.recording&&!(REC&&REC.lec.id===x.id)){ x.recording=false; lecPut(x).catch(()=>{}); }
+  items.sort((a,b)=>b.createdAt-a.createdAt);
+  if(LV.view!=="list"||v.hidden) return;
+  v.innerHTML=`<div class="lib-top"><h2>Lectures</h2>${REC?`<button class="btn primary rec-btn" data-act="torec"><span class="rec-dot live"></span>Back to recording</button>`:`<button class="btn primary rec-btn" data-act="record"><span class="rec-dot"></span>Record a lecture</button>`}</div>
+    <p class="hint">Record a class and get a live transcript as you go. When you stop, it becomes study notes you can turn into flashcards.</p>
+    ${SR?"":`<p class="notice">Live transcription isn't available in this browser (Chrome, Edge and Safari have it). You can still record audio here and paste a transcript afterwards.</p>`}
+    ${lecMsg()}${err?`<p class="notice bad">${esc(err)}</p>`:""}
+    <div class="lec-links"><button class="link" data-act="paste">Paste or import a transcript</button><button class="link" data-act="key">Notes settings${aiKey()?"":" (set up Claude)"}</button></div>
+    <div class="set-list">${items.length?items.map(x=>{ const w=wordCount(x); return `<article class="set-row"><button class="set-open" data-act="open" data-id="${x.id}">
+      <span class="set-name">${esc(x.title)}</span>
+      <span class="set-meta">${lecDate(x.createdAt)}${x.duration&&!x.pasted?" · "+clock(x.duration):""} · ${w} words${x.notes?` · <b style="color:var(--good)">Notes ready</b>`:""}${x.recording?` · <b style="color:var(--bad)">Recording</b>`:""}</span>
+    </button></article>`; }).join(""):`<div class="empty"><span>No lectures yet. Press <b>Record a lecture</b> when class starts.</span></div>`}</div>`;
+}
+async function lecDetail(){
+  const v=$("lecView"), id=LV.id;
+  let lec=LV.lec&&LV.lec.id===id?LV.lec:null;
+  if(!lec) try{ lec=await lecGet(id); }catch(e){}
+  if(!lec){ LV={view:"list",msg:{msg:"That lecture couldn't be found.",kind:"bad"}}; return lecList(); }
+  LV.lec=lec;
+  if(LV.urlId!==id){
+    if(LV.url) URL.revokeObjectURL(LV.url); LV.url=null; LV.urlId=id;
+    let blob=LV.blobId===id?LV.blob:null;
+    if(!blob) try{ blob=await audioGet(id); }catch(e){}
+    if(blob){ LV.url=URL.createObjectURL(blob); LV.ext=/mp4|aac/.test(blob.type)?".m4a":/ogg/.test(blob.type)?".ogg":".webm"; }
+  }
+  if(LV.view!=="detail"||LV.id!==id||v.hidden) return;
+  v.innerHTML=`<div class="lec-links"><button class="link" data-act="list">← Lectures</button></div>
+    <section class="card">
+      <div class="meta"><span>${lecDate(lec.createdAt)}</span><span>${lec.duration&&!lec.pasted?clock(lec.duration)+" · ":""}${wordCount(lec)} words</span></div>
+      <input id="lecTitle" class="text-in rec-title" style="text-align:left" maxlength="80" value="${esc(lec.title)}" aria-label="Lecture title">
+      ${LV.url?`<audio class="lec-audio" id="lecAudio" controls preload="metadata" src="${LV.url}"></audio><div class="lec-links"><a class="link" href="${LV.url}" download="${esc(fileName(lec.title)+LV.ext)}">Download audio</a></div>`:lec.pasted?"":`<p class="hint">No audio was saved for this lecture.</p>`}
+    </section>
+    <nav class="tabs lec-tabs" role="tablist" aria-label="Lecture"><button class="tab" role="tab" data-act="tab" data-tab="notes">Notes</button><button class="tab" role="tab" data-act="tab" data-tab="transcript">Transcript</button></nav>
+    <div class="view" id="lecBody"></div>
+    <div class="lec-links" id="lecDel"></div>`;
+  lecBody(); delRow();
+}
+function delRow(){
+  const el=$("lecDel"); if(!el) return;
+  el.innerHTML=LV.confirm?`<span>Delete this lecture, its audio and notes? This can't be undone.</span><button class="btn danger" data-act="del">Delete</button><button class="btn" data-act="nodel">Cancel</button>`
+    :`<button class="link danger" data-act="askdel">Delete lecture</button>`;
+}
+function lecBody(){
+  const el=$("lecBody"), lec=LV.lec; if(!el||!lec) return;
+  const tab=LV.tab||"notes";
+  document.querySelectorAll(".lec-tabs .tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  el.innerHTML=tab==="transcript"?trHtml(lec):notesHtml(lec);
+}
+function notesHtml(lec){
+  const key=aiKey(), err=LV.nerr?`<p class="notice bad">${esc(LV.nerr)}</p>`:"";
+  if(LV.busy&&LV.busy.id===lec.id) return `<section class="card"><div class="busy"><span class="spin"></span><span id="notesProg">${esc(LV.busy.msg)}</span></div><p class="hint">Claude is reading the whole lecture. Longer lectures take a minute or two.</p><div class="btnrow-l"><button class="btn" data-act="cancelnotes">Cancel</button></div></section>`;
+  const n=lec.notes;
+  if(!n) return err+`<section class="card center">
+      <p class="big">Make notes</p>
+      ${!lec.segs.length?`<p class="hint">There's no transcript yet. Add one on the Transcript tab, then come back here.</p>`
+        :key?`<p class="hint">Claude turns the transcript into organized notes with a summary, key terms and review questions.</p><button class="btn primary" data-act="notes">Make notes</button><button class="link" data-act="quick">Or make quick notes on this device</button>`
+        :`<p class="hint">Quick notes pick out the key lines from the transcript right here on your device. For full notes with a summary, key terms and review questions, set up Claude.</p><div class="btnrow"><button class="btn primary" data-act="quick">Make quick notes</button><button class="btn" data-act="key">Set up Claude</button></div>`}
+    </section>`;
+  const terms=n.key_terms||[], qs=n.review_questions||[];
+  const point=p=>esc(p).replace(/\s*\(emphasi[sz]ed\)\s*$/i,' <span class="emph">Emphasized</span>');
+  return err+(n.quick?`<p class="notice">These are quick notes made on your device.${key?` <button class="link" data-act="notes">Make full notes with Claude</button>`:` <button class="link" data-act="key">Set up Claude</button> for a summary, key terms and review questions.`}</p>`:"")+
+    `<section class="card notes"><h2>${esc(n.title||lec.title)}</h2>
+      ${n.summary?`<p class="notes-sum">${esc(n.summary)}</p>`:""}
+      ${n.sections.map(s=>`<h3>${esc(s.heading)}</h3><ul>${s.points.map(p=>`<li>${point(p)}</li>`).join("")}</ul>`).join("")||`<p class="hint">Nothing stood out in this transcript.</p>`}
+    </section>
+    ${terms.length?`<section class="card"><div class="meta"><span>Key terms</span><span>${terms.length}</span></div><dl class="terms">${terms.map(k=>`<div><dt>${esc(k.term)}</dt><dd>${esc(k.definition)}</dd></div>`).join("")}</dl></section>`:""}
+    ${qs.length?`<section class="card"><div class="meta"><span>Review questions</span><span>${qs.length}</span></div><div>${qs.map(q=>`<details class="rq"><summary>${esc(q.question)}</summary><p>${esc(q.answer)}</p></details>`).join("")}</div></section>`:""}
+    <div class="btnrow-l">
+      ${terms.length+qs.length>=2?`<button class="btn primary" data-act="cards">Make flashcards</button>`:""}
+      ${qs.length?`<label class="check"><input type="checkbox" id="withQs"${terms.length<2?" checked":""}> Include review questions</label>`:""}
+    </div>
+    <div class="btnrow-l"><button class="btn" data-act="copy">Copy notes</button><button class="btn" data-act="md">Download notes</button>${n.quick?"":`<button class="btn" data-act="notes">Redo notes</button>`}</div>`;
+}
+function trHtml(lec){
+  if(LV.editTr) return `<section class="card"><div class="meta"><span>Edit transcript</span></div>
+      <p class="hint">Fix misheard words, or paste in text. Keep the [m:ss] times at the start of paragraphs so they still jump to the audio.</p>
+      <textarea id="trEdit" class="tr-edit">${esc(transcriptText(lec))}</textarea>
+      <div class="btnrow-l"><button class="btn primary" data-act="savetr">Save transcript</button><button class="btn" data-act="canceltr">Cancel</button></div></section>`;
+  if(!lec.segs.length) return `<div class="empty"><span>No transcript was captured for this lecture.</span><button class="btn primary" data-act="edittr">Add a transcript</button></div>`;
+  const timed=hasTimes(lec);
+  return `<section class="card tr">${paras(lec).map(p=>`<p>${timed?`<button class="ts" data-act="seek" data-t="${p.t}" ${LV.url?"":"disabled"} title="Play from here">${clock(p.t)}</button>`:""}${esc(p.text)}</p>`).join("")}</section>
+    <div class="btnrow-l"><button class="btn" data-act="edittr">Edit transcript</button><button class="btn" data-act="copytr">Copy transcript</button></div>
+    ${lec.notes?`<p class="hint">Edited the transcript? Use Redo notes on the Notes tab to update your notes.</p>`:""}`;
+}
+function keyPanel(){
+  const v=$("lecView"), key=aiKey();
+  v.innerHTML=`<section class="card"><div class="meta"><span>Notes settings</span><span>${key?"Claude is set up":"Not set up"}</span></div>
+    ${lecMsg()}
+    <p class="hint">Recall Drill uses Claude to turn transcripts into notes. It needs an Anthropic API key, and each set of notes is billed to your Anthropic account (usually a few cents to a few tens of cents for a lecture).</p>
+    <ol class="steps"><li>Go to <b>console.anthropic.com</b>, sign in, and add credit under <b>Billing</b>.</li><li>Open <b>API keys</b>, choose <b>Create key</b> and copy it.</li><li>Paste it below.</li></ol>
+    <form class="sync-form" id="keyForm">
+      <label for="aiKey" class="side">Anthropic API key</label>
+      <input id="aiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${key?"Saved. Paste a new key to replace it":"sk-ant-…"}">
+      <p class="err-text" id="keyErr" hidden></p>
+      <div class="btnrow-l"><button class="btn primary">Save key</button><button class="btn" type="button" data-act="keyback">Back</button>${key?`<button class="link danger" type="button" data-act="keydel">Remove key</button>`:""}</div>
+    </form>
+    <p class="hint">The key stays on this device and isn't synced. When you make notes, the lecture's transcript is sent to Anthropic. Audio never leaves your device. Without a key you can still make quick notes.</p></section>`;
+}
+function keySave(){
+  const k=$("aiKey").value.trim(), er=$("keyErr");
+  if(!k){ $("aiKey").focus(); return; }
+  if(!/^sk-ant-/.test(k)){ er.hidden=false; er.textContent="That doesn't look like an Anthropic API key. They start with sk-ant-."; return; }
+  try{ localStorage.setItem(AI_KEY,k); }catch(e){ er.hidden=false; er.textContent="Couldn't save the key in this browser."; return; }
+  LV.msg={msg:"Claude is set up. New recordings get notes automatically when you stop.",kind:"ok"};
+  LV.view=LV.back||"list"; lecRender();
+}
+function pastePanel(){
+  const v=$("lecView");
+  v.innerHTML=`<div class="lec-links"><button class="link" data-act="list">← Lectures</button></div>
+    <form class="card" id="pasteForm"><div class="meta"><span>Add a transcript</span></div>
+      <label class="side" for="pTitle">Title</label>
+      <input id="pTitle" class="text-in" maxlength="80" placeholder="e.g. Biology 101, Week 3">
+      <label class="side" for="pText">Transcript</label>
+      <div class="imp-bar"><button class="btn" type="button" data-act="pastefile">Import a file</button><input id="pFile" class="vh" type="file" accept=".txt,.vtt,.srt,.md,text/plain,text/vtt" tabindex="-1" aria-hidden="true"><span class="hint">Text, or captions from Zoom, Teams or YouTube (.vtt, .srt)</span></div>
+      <textarea id="pText" class="tr-edit" placeholder="Paste a transcript, or rough notes you want turned into study notes"></textarea>
+      <p class="err-text" id="pErr" hidden></p>
+      <div class="btnrow-l"><button class="btn primary">${aiKey()?"Save and make notes":"Save"}</button><button class="btn" type="button" data-act="list">Cancel</button></div>
+    </form>`;
+  $("pFile").onchange=async()=>{
+    const f=$("pFile").files[0]; $("pFile").value=""; if(!f) return;
+    try{ $("pText").value=await f.text(); if(!$("pTitle").value.trim()) $("pTitle").value=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim().slice(0,80); }
+    catch(e){ $("pErr").hidden=false; $("pErr").textContent="Couldn't read "+f.name+"."; }
+  };
+  $("pTitle").focus();
+}
+async function pasteSave(){
+  const segs=parseTranscript($("pText").value), title=$("pTitle").value.trim(), er=$("pErr");
+  if(!segs.length){ er.hidden=false; er.textContent="Paste a transcript first."; return; }
+  const lec={id:"l"+uid(),title:title||"Lecture, "+lecDate(Date.now()),titled:!!title,createdAt:Date.now(),duration:segs[segs.length-1].t,segs,notes:null,mime:"",pasted:true};
+  try{ await lecPut(lec); }catch(e){ er.hidden=false; er.textContent=e.message; return; }
+  LV={view:"detail",id:lec.id,lec,tab:"notes"}; await lecRender();
+  if(aiKey()&&wordCount(lec)>=30) lecMakeNotes(lec,false);
+}
+async function lecAct(a,b){
+  const lec=LV.lec;
+  switch(a){
+    case "record": return recStart();
+    case "torec": LV.view="rec"; return lecRender();
+    case "list": LV.view="list"; LV.confirm=false; LV.editTr=false; return lecRender();
+    case "paste": LV.view="paste"; return lecRender();
+    case "key": LV.back=LV.view; LV.view="key"; return lecRender();
+    case "keyback": LV.view=LV.back||"list"; return lecRender();
+    case "keydel": try{ localStorage.removeItem(AI_KEY); }catch(e){} return keyPanel();
+    case "open": Object.assign(LV,{view:"detail",id:b.dataset.id,tab:"notes",editTr:false,confirm:false,nerr:null}); return lecRender();
+    case "pause": return recPause();
+    case "stop": return recStop();
+    case "tab": LV.tab=b.dataset.tab; LV.editTr=false; return lecBody();
+    case "notes": return lecMakeNotes(lec,false);
+    case "quick": return lecMakeNotes(lec,true);
+    case "cancelnotes": if(LV.busy) LV.busy.ctrl.abort(); return;
+    case "cards": return lecToSet(lec,!!($("withQs")&&$("withQs").checked));
+    case "copy": return copyText(notesMd(lec),b);
+    case "copytr": return copyText(transcriptText(lec),b);
+    case "md": return download(notesMd(lec),fileName(lec.title)+".md","text/markdown");
+    case "edittr": LV.editTr=true; lecBody(); $("trEdit").focus(); return;
+    case "canceltr": LV.editTr=false; return lecBody();
+    case "savetr":
+      lec.segs=parseTranscript($("trEdit").value); LV.editTr=false;
+      try{ await lecPut(lec); }catch(e){ LV.nerr=e.message; }
+      return lecDetail();
+    case "seek": { const au=$("lecAudio"); if(au){ au.currentTime=+b.dataset.t; au.play().catch(()=>{}); } return; }
+    case "askdel": LV.confirm=true; return delRow();
+    case "nodel": LV.confirm=false; return delRow();
+    case "del":
+      if(LV.busy&&LV.busy.id===lec.id) LV.busy.ctrl.abort();
+      try{ await lecDelete(lec.id); }catch(e){ LV.nerr=e.message; return lecBody(); }
+      LV={view:"list",url:LV.url,msg:{msg:"Lecture deleted.",kind:"ok"}}; if(LV.url){ URL.revokeObjectURL(LV.url); LV.url=null; }
+      return lecRender();
+    case "pastefile": $("pFile").click(); return;
+  }
+}
+function lecWire(){
+  $("lecBtn").onclick=goLectures;
+  const v=$("lecView");
+  v.onclick=e=>{ const b=e.target.closest("[data-act]"); if(b&&!b.disabled) lecAct(b.dataset.act,b); };
+  v.oninput=e=>{ if(e.target.id==="recTitle"&&REC&&e.target.value.trim()){ REC.lec.title=e.target.value.trim(); REC.lec.titled=true; } };
+  v.onchange=e=>{
+    if(e.target.id!=="lecTitle"||!LV.lec) return;
+    const t=e.target.value.trim(); if(t){ LV.lec.title=t; LV.lec.titled=true; lecPut(LV.lec).catch(()=>{}); }
+  };
+  v.onsubmit=e=>{ e.preventDefault(); if(e.target.id==="keyForm") keySave(); else if(e.target.id==="pasteForm") pasteSave(); };
+  window.addEventListener("beforeunload",e=>{ if(REC){ e.preventDefault(); e.returnValue=""; } });
+  document.addEventListener("visibilitychange",()=>{ if(!REC) return; if(document.visibilityState==="hidden") recPersist(REC,true).catch(()=>{}); else wakeOn(); });
+}
+
 document.addEventListener("keydown",e=>{
   if(e.target.matches("textarea,select,input:not([type=checkbox])")) return;
-  if(!$("syncView").hidden||!$("editView").hidden||!$("libView").hidden) return;
+  if(!$("syncView").hidden||!$("editView").hidden||!$("libView").hidden||!$("lecView").hidden) return;
   if(S.mode==="flashcards"&&!$("fcView").hidden){ fcKey(e); return; }
   if(S.mode!=="learn") return;
   // after an answer: any key moves on (skips the auto-advance wait, or continues after a miss)
@@ -1691,7 +2270,7 @@ $("askWith").onchange=e=>{S.askWith=e.target.value; save(); if(current&&!current
 $("roundSize").onchange=e=>{S.roundSize=+e.target.value; save();};
 
 R = load() || sampleRoot();
-fcWire(); libWire();
+fcWire(); libWire(); lecWire();
 $("tabFc").onclick=()=>setMode("flashcards");
 $("tabLearn").onclick=()=>setMode("learn");
 $("tabMatch").onclick=()=>setMode("match");

@@ -1,5 +1,5 @@
 // Recall Drill offline support: serve the app from cache, refresh it in the background.
-const CACHE = "recall-drill-v2";
+const CACHE = "recall-drill-v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js"];
 
 self.addEventListener("install", e => {

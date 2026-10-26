@@ -1,7 +1,7 @@
 {
   "name": "Recall Drill",
   "short_name": "Recall Drill",
-  "description": "Flashcards and adaptive Learn rounds that work offline and sync between devices.",
+  "description": "Flashcards, adaptive Learn rounds, and lecture recordings that become notes. Works offline and syncs between devices.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
