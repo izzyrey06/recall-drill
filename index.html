@@ -160,6 +160,26 @@ h1 button{all:unset;cursor:pointer;border-radius:6px} h1 button:focus-visible{ou
 .date-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.92rem}
 .date-in{font:inherit;padding:7px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
 .countdown{font-weight:700;color:var(--accent)}
+.terms{display:grid;gap:12px;margin-top:12px}
+.terms-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.terms-head h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
+.terms-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.terms-tools input[type=search]{flex:1 1 200px;min-width:0;font:inherit;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.terms-tools select{font:inherit;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.t-group{font-family:var(--display);font-weight:600;font-size:1rem;margin:8px 0 0;display:flex;gap:8px;align-items:center}
+.t-group span{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-weight:500}
+.t-group i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.t-list{display:grid;gap:8px}
+.t-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) auto;gap:6px 18px;align-items:start;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.t-term{font-weight:600;overflow-wrap:anywhere;padding-right:14px;border-right:1px solid var(--line)}
+.t-def{overflow-wrap:anywhere;color:var(--ink)}
+.t-acts{display:flex;gap:0;margin:-6px -8px -6px 0}
+.t-acts .icon{width:34px;height:34px}
+.t-edit{grid-column:1/-1;display:grid;gap:8px}
+.t-edit textarea{min-height:54px;font-family:var(--body);font-size:1rem}
+.t-empty{color:var(--muted);text-align:center;padding:20px;border:1.5px dashed var(--line);border-radius:14px;margin:0}
+mark{background:color-mix(in srgb,var(--mark) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+@media (max-width:560px){.t-row{grid-template-columns:minmax(0,1fr) auto}.t-term{border-right:0;padding-right:0}.t-def{grid-column:1/-1;grid-row:2;color:var(--muted)}.t-acts{grid-column:2;grid-row:1}}
 .flash-ans{margin:0;padding:14px 16px;background:var(--bg);border-radius:12px;font-weight:600;overflow-wrap:anywhere}
 .retype{display:grid;gap:8px;margin-top:8px}
 .auto-bar{height:4px;border-radius:99px;background:var(--good);opacity:.55;transform-origin:left;animation:autobar var(--auto-ms,1000ms) linear forwards}
@@ -348,6 +368,16 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
       <button class="link" id="fcRestart">Restart flashcards</button>
     </div>
     <p class="hint">Space flips. Arrows move between cards, or sort them when tracking progress. Z undoes. When sorting you can also drag the card left or right. With spaced repetition on, ✓ pushes a card further out and ✕ brings it back soon.</p>
+
+    <section class="terms" aria-labelledby="termsTitle">
+      <div class="terms-head"><h2 id="termsTitle">Terms in this set (<span id="termCount">0</span>)</h2><button class="link" id="termEditAll">Add or remove terms</button></div>
+      <div class="terms-tools">
+        <input type="search" id="termSearch" placeholder="Search terms and definitions" aria-label="Search terms" autocomplete="off">
+        <select id="termSort" aria-label="Sort terms"><option value="orig">Original order</option><option value="az">Alphabetical</option><option value="progress">By progress</option></select>
+        <select id="termFilter" aria-label="Show"><option value="all">All terms</option><option value="star">Starred</option></select>
+      </div>
+      <div id="termBody"></div>
+    </section>
   </section>
 
   <section class="view" id="matchView" hidden></section>
@@ -1028,6 +1058,7 @@ function fcRender(){
   $("fcStarred").checked=f.starredOnly; $("fcStarred").disabled=!starCount&&!f.starredOnly;
   $("fcStarredLbl").textContent=`Starred only (${starCount})`;
   $("fcEdit").hidden=true;
+  renderTerms();
   $("flip").hidden=done; $("fcControls").hidden=done; $("fcDone").hidden=!done;
   if(done){ fcDone(); return; }
 
@@ -1408,6 +1439,84 @@ function testGrade(){
   testRender(); window.scrollTo(0,0);
 }
 
+/* ---------------- Terms in this set ---------------- */
+let TL={q:"",sort:"orig",filter:"all",edit:null,key:""};
+function termStatus(c){
+  const learned=c.lvl>=target() || (c.srs&&c.srs.reps>=2);
+  if(learned) return "mastered";
+  if(c.lvl>0||c.miss||c.srs) return "learning";
+  return "new";
+}
+const T_GROUPS=[["learning","Still learning","var(--mark)"],["new","Not studied","var(--muted)"],["mastered","Mastered","var(--good)"]];
+function hl(text,q){
+  const t=esc(text); if(!q) return t;
+  const i=text.toLowerCase().indexOf(q); if(i<0) return t;
+  return esc(text.slice(0,i))+"<mark>"+esc(text.slice(i,i+q.length))+"</mark>"+esc(text.slice(i+q.length));
+}
+function renderTerms(force){
+  if(!S||!$("termBody")) return;
+  if(TL.edit!==null && !force) return; // don't wipe a row that's being edited
+  const q=TL.q.trim().toLowerCase();
+  const key=JSON.stringify([S.id,TL.q,TL.sort,TL.filter,LO().goal,S.cards.map(c=>[c.term,c.def,c.star,c.lvl,c.miss,c.srs&&c.srs.reps])]);
+  if(key===TL.key && !force) return; TL.key=key;
+  const starN=S.cards.filter(c=>c.star).length;
+  $("termCount").textContent=S.cards.length;
+  $("termFilter").options[1].textContent=`Starred (${starN})`;
+  $("termSearch").value!==TL.q && ($("termSearch").value=TL.q); $("termSort").value=TL.sort; $("termFilter").value=TL.filter;
+  let cards=S.cards.slice();
+  if(TL.filter==="star") cards=cards.filter(c=>c.star);
+  if(q) cards=cards.filter(c=>c.term.toLowerCase().includes(q)||c.def.toLowerCase().includes(q));
+  if(TL.sort==="az") cards.sort((a,b)=>a.term.localeCompare(b.term,undefined,{sensitivity:"base",numeric:true}));
+  const row=c=>`<article class="t-row" data-id="${c.id}">
+      <div class="t-term">${hl(c.term,q)}</div><div class="t-def">${hl(c.def,q)}</div>
+      <div class="t-acts">
+        <button class="icon${c.star?" on":""}" data-t="star" title="${c.star?"Unstar":"Star"}" aria-pressed="${!!c.star}" aria-label="${c.star?"Unstar":"Star"} ${esc(c.term)}">${IC.star}</button>
+        <button class="icon" data-t="speak" title="Read aloud" aria-label="Read ${esc(c.term)} aloud">${IC.speak}</button>
+        <button class="icon" data-t="edit" title="Edit" aria-label="Edit ${esc(c.term)}">${IC.edit}</button>
+      </div></article>`;
+  let html="";
+  if(!cards.length) html=`<p class="t-empty">${q?`No terms match “${esc(TL.q)}”.`:TL.filter==="star"?"No starred terms yet. Tap the star on any term to add it here.":"This set has no terms."}</p>`;
+  else if(TL.sort==="progress"){
+    for(const [k,label,color] of T_GROUPS){
+      const g=cards.filter(c=>termStatus(c)===k); if(!g.length) continue;
+      html+=`<h3 class="t-group"><i style="background:${color}" aria-hidden="true"></i>${label} <span>${g.length}</span></h3><div class="t-list">${g.map(row).join("")}</div>`;
+    }
+  } else html=`<div class="t-list">${cards.map(row).join("")}</div>`;
+  $("termBody").innerHTML=html;
+}
+function termEdit(id){
+  const c=S.cards[id], el=document.querySelector(`.t-row[data-id="${id}"]`); if(!c||!el) return;
+  stopAuto(); TL.edit=id;
+  el.innerHTML=`<form class="t-edit" data-form="${id}">
+    <label class="side" for="te-t">Term</label><textarea id="te-t">${esc(c.term)}</textarea>
+    <label class="side" for="te-d">Definition</label><textarea id="te-d">${esc(c.def)}</textarea>
+    <div class="btnrow-l"><button class="btn primary">Save</button><button class="btn" type="button" data-t="cancel">Cancel</button></div></form>`;
+  $("te-t").focus();
+}
+function termsWire(){
+  $("termSearch").oninput=e=>{ TL.q=e.target.value; renderTerms(); };
+  $("termSort").onchange=e=>{ TL.sort=e.target.value; renderTerms(); };
+  $("termFilter").onchange=e=>{ TL.filter=e.target.value; renderTerms(); };
+  $("termEditAll").onclick=()=>editor(false);
+  const body=$("termBody");
+  body.onclick=e=>{
+    const b=e.target.closest("[data-t]"); if(!b) return;
+    const row=b.closest(".t-row"), id=+row.dataset.id, c=S.cards[id];
+    if(b.dataset.t==="star"){ c.star=!c.star; save(); fcRender(); }
+    else if(b.dataset.t==="speak"){ speak(c.term+". "+c.def); }
+    else if(b.dataset.t==="edit"){ if(TL.edit!==null){ TL.edit=null; renderTerms(true); } termEdit(id); }
+    else if(b.dataset.t==="cancel"){ TL.edit=null; renderTerms(true); }
+  };
+  body.onsubmit=e=>{
+    e.preventDefault(); const id=+e.target.dataset.form, c=S.cards[id];
+    const t=$("te-t").value.trim().replace(/\s*\n\s*/g," "), d=$("te-d").value.trim().replace(/\s*\n\s*/g," ");
+    if(!t){ $("te-t").focus(); return; } if(!d){ $("te-d").focus(); return; }
+    c.term=t; c.def=d; S.text=S.cards.map(x=>x.term+"\t"+x.def).join("\n");
+    TL.edit=null; save(); fcRender(); renderTerms(true);
+  };
+  body.onkeydown=e=>{ if(e.key==="Escape"&&TL.edit!==null){ TL.edit=null; renderTerms(true); } if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)&&TL.edit!==null){ e.preventDefault(); body.querySelector("form")?.requestSubmit(); } };
+}
+
 /* ---------------- Library ---------------- */
 IC.folder='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 6.5A1.5 1.5 0 015 5h4.2l2 2.2H19a1.5 1.5 0 011.5 1.5v8.8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5z"/></svg>';
 IC.more='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>';
@@ -1418,7 +1527,7 @@ function openSet(id){
   stopAuto(); current=null; $("stage").innerHTML="";
   const wasQuiet=quiet; quiet=true;
   try{
-    R.activeId=id; S=st; S.studiedAt=Date.now();
+    R.activeId=id; S=st; S.studiedAt=Date.now(); TL.q=""; TL.edit=null; TL.key=""; TL.filter="all";
     S.cards.forEach(c=>{ if(c.star===undefined) c.star=false; });
     $("askWith").value=S.askWith||"term"; $("roundSize").value=String(S.roundSize||7);
     LU.menu=null; LU.confirm=null;
@@ -1691,7 +1800,7 @@ $("askWith").onchange=e=>{S.askWith=e.target.value; save(); if(current&&!current
 $("roundSize").onchange=e=>{S.roundSize=+e.target.value; save();};
 
 R = load() || sampleRoot();
-fcWire(); libWire();
+fcWire(); libWire(); termsWire();
 $("tabFc").onclick=()=>setMode("flashcards");
 $("tabLearn").onclick=()=>setMode("learn");
 $("tabMatch").onclick=()=>setMode("match");
