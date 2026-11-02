@@ -353,6 +353,11 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
 .scan-src-line{grid-column:2/-1;font-size:.78rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
 .scan-src-line>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
 @media (max-width:760px){.scan-row{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}.scan-row [data-f=name]{grid-column:2/-1;grid-row:1}.scan-row [data-f=type]{grid-column:2/-1}.scan-row [data-f=date]{grid-column:2}.scan-row [data-f=time]{grid-column:3}.scan-src-line>span:last-child{white-space:normal}}
+
+.side-sync{display:flex;gap:8px;align-items:center;font-size:.76rem;color:var(--muted);padding:2px 10px 0 12px}
+.sy-state{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;font-weight:600;font-size:.9rem}
+.cmd{display:flex;gap:8px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 12px;min-width:0}
+.cmd code{font-family:var(--mono);font-size:.78rem;overflow-x:auto;white-space:nowrap;flex:1;min-width:0}
 </style>
 </head><body><div class="app">
   <aside class="side" id="side" aria-label="Navigation">
@@ -363,7 +368,8 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
     <div class="side-h"><span>Classes</span><a href="#/add" title="Add a class" aria-label="Add a class">+</a></div>
     <nav id="sideCourses" style="display:grid;gap:2px" aria-label="Classes"></nav>
     <div class="side-foot">
-      <a class="nav-a" id="navMoodle" href="#/connect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg><span class="nm">Moodle settings</span></a>
+      <a class="nav-a" id="navMoodle" href="#/connect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg><span class="nm">Settings</span></a>
+      <span class="side-sync" id="sideSync" hidden></span>
     </div>
   </aside>
   <div class="scrim" id="scrim"></div>
@@ -436,12 +442,161 @@ const DB=(()=>{
 let ST, TEXT={};
 function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},events:{},outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
 let saveT;
-function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); }
+function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); scheduleSync(); }
 function flush(){ clearTimeout(saveT); saveT=null; if(!ST) return Promise.resolve(); return DB.put("kv","state",ST).catch(e=>toast("Couldn't save on this device: "+(e.message||e))); }
 window.addEventListener("pagehide",flush);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flush(); });
 async function putText(id,t){ TEXT[id]=t; try{ await DB.put("text",id,t); }catch(e){} }
 async function removeMaterial(id){ delete ST.materials[id]; delete TEXT[id]; try{ await DB.del("files",id); await DB.del("text",id); }catch(e){} }
+
+/* ============ Sync between devices (private GitHub Gist, merged item by item) ============ */
+const SYNC_FILE="recall-notes-sync.json", GH="https://api.github.com";
+const SY={busy:false,again:false,timer:null,state:"none",msg:""};
+let syncApplying=false;
+function scheduleSync(){ if(syncApplying||!ST||!ST.sync||!ST.sync.gistId) return; clearTimeout(SY.timer); SY.timer=setTimeout(syncNow,3000); }
+async function gh(path,opt={}){
+  let r; try{ r=await fetch(GH+path,{...opt,cache:"no-store",headers:{Authorization:"Bearer "+ST.sync.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}}); }
+  catch(e){ throw new Error("Couldn't reach GitHub."); }
+  if(r.status===401) throw new Error("GitHub rejected the token. Make a new one with the gist scope.");
+  if(r.status===404){ const e=new Error("Sync gist not found"); e.code=404; throw e; }
+  if(!r.ok) throw new Error("GitHub returned an error ("+r.status+"). Try again in a minute.");
+  return r.json();
+}
+function canon(v){ if(Array.isArray(v)) return v.map(canon); if(v&&typeof v==="object"){ const o={}; Object.keys(v).sort().forEach(k=>{ if(v[k]!==undefined) o[k]=canon(v[k]); }); return o; } return v; }
+const recHash=v=>hash(JSON.stringify(canon(v)));
+// What travels: notes, your own assignments/events/classes, done marks, class colors and names, which decks already have outlines.
+// Files never travel; each device gets Moodle files from Moodle.
+function syncCollect(){
+  const out={};
+  for(const n of Object.values(ST.notes)) out["n:"+n.id]=n;
+  for(const a of Object.values(ST.assignments)){ if(!a.moodleId) out["a:"+a.id]=a; else if(a.done) out["f:"+a.id]={done:true}; }
+  for(const e of Object.values(ST.events)) if(e.mine) out["e:"+e.id]=e;
+  for(const c of Object.values(ST.courses)){ if(!c.moodleId) out["c:"+c.id]=c; else out["k:"+c.id]=c.renamed?{color:c.color,name:c.name}:{color:c.color}; }
+  for(const [m,n] of Object.entries(ST.outlined)) out["o:"+m]=n;
+  for(const [k,v] of Object.entries(ST.syncPending||{})) if(!(k in out)) out[k]=v;
+  return out;
+}
+function stampOf(k,v,now){ if(k.startsWith("n:")) return v.auto?1:(v.updatedAt||now); const S=ST.sync; return S.hash[k]===recHash(v)?(S.t[k]||now):now; }
+function mergeSync(a,b){
+  const del={}, recs={}, cut=Date.now()-120*DAY;
+  for(const src of [a.del||{},b.del||{}]) for(const [k,t] of Object.entries(src)) if(t>cut) del[k]=Math.max(t,del[k]||0);
+  for(const k of new Set([...Object.keys(a.recs||{}),...Object.keys(b.recs||{})])){
+    const x=a.recs[k], y=b.recs&&b.recs[k], r=!x?y:!y?x:(y.t>x.t?y:x);
+    if(del[k]&&del[k]>=r.t) continue;
+    delete del[k]; recs[k]=r;
+  }
+  return {v:1,recs,del};
+}
+const replaceIn=(obj,id,d)=>{ const o=obj[id]; if(o&&typeof o==="object"){ for(const k of Object.keys(o)) delete o[k]; Object.assign(o,d); } else obj[id]=d; };
+function putKey(k,d){
+  const i=k.indexOf(":"), t=k.slice(0,i), id=k.slice(i+1);
+  if(t==="n") replaceIn(ST.notes,id,d);
+  else if(t==="a") replaceIn(ST.assignments,id,d);
+  else if(t==="e") replaceIn(ST.events,id,d);
+  else if(t==="c") replaceIn(ST.courses,id,d);
+  else if(t==="o") ST.outlined[id]=d;
+  else if(t==="f"){ if(!ST.assignments[id]) return false; ST.assignments[id].done=true; }
+  else if(t==="k"){ const c=ST.courses[id]; if(!c) return false; c.color=d.color||c.color; if(d.name){ c.name=d.name; c.renamed=true; } }
+  return true;
+}
+function removeKey(k){
+  const i=k.indexOf(":"), t=k.slice(0,i), id=k.slice(i+1);
+  if(t==="n") delete ST.notes[id]; else if(t==="a") delete ST.assignments[id]; else if(t==="e") delete ST.events[id];
+  else if(t==="c"){ delete ST.courses[id]; for(const n of Object.values(ST.notes)) if(n.courseId===id){ n.courseId=null; n.sectionId=null; } }
+  else if(t==="o") delete ST.outlined[id]; else if(t==="f"&&ST.assignments[id]) ST.assignments[id].done=false;
+}
+function applySync(m,local){
+  let changed=false; syncApplying=true;
+  try{
+    for(const k of Object.keys(local)) if(!m.recs[k]){ removeKey(k); changed=true; }
+    const pend={};
+    for(const [k,r] of Object.entries(m.recs)){
+      if(local[k]!==undefined&&recHash(local[k])===recHash(r.d)){ if(ST.syncPending?.[k]) pend[k]=r.d; continue; }
+      if(putKey(k,structuredClone(r.d))===false) pend[k]=r.d; else changed=true;
+    }
+    ST.syncPending=pend;
+    if(changed) save();
+  } finally { syncApplying=false; }
+  if(changed) render();
+}
+async function gistGet(){
+  const g=await gh("/gists/"+ST.sync.gistId), f=g.files&&g.files[SYNC_FILE]; if(!f) return null;
+  let t=f.content; if(f.truncated) t=await (await fetch(f.raw_url,{cache:"no-store"})).text();
+  try{ const j=JSON.parse(t); return j&&j.recs?j:null; }catch(e){ return null; }
+}
+const gistPut=d=>gh("/gists/"+ST.sync.gistId,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:JSON.stringify(d)}}})});
+async function gistNew(d){ const g=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Recall Notes sync (private)",public:false,files:{[SYNC_FILE]:{content:JSON.stringify(d)}}})}); ST.sync.gistId=g.id; }
+async function syncNow(){
+  const S=ST&&ST.sync; if(!S||!S.token||!S.gistId) return;
+  if(!navigator.onLine){ setSyncState("off"); return; }
+  if(SY.busy){ SY.again=true; return; }
+  SY.busy=true; setSyncState("busy");
+  try{
+    const now=Date.now(), local=syncCollect(), mine={v:1,recs:{},del:{...(S.del||{})}};
+    for(const [k,v] of Object.entries(local)) mine.recs[k]={t:stampOf(k,v,now),d:v};
+    for(const k of Object.keys(S.hash)) if(!(k in local)) mine.del[k]=Math.max(mine.del[k]||0,now);
+    let remote=null;
+    try{ remote=await gistGet(); }catch(e){ if(e.code!==404) throw e; await gistNew(mine); }
+    const merged=mergeSync(mine,remote||{recs:{},del:{}});
+    applySync(merged,local);
+    S.hash={}; S.t={}; for(const [k,r] of Object.entries(merged.recs)){ S.hash[k]=recHash(r.d); S.t[k]=r.t; } S.del=merged.del;
+    if(!remote||JSON.stringify(canon(merged))!==JSON.stringify(canon(remote))) await gistPut(merged);
+    S.lastSync=Date.now(); setSyncState("ok");
+  }catch(e){ setSyncState(navigator.onLine?"err":"off",e.message); }
+  syncApplying=true; save(); syncApplying=false;
+  SY.busy=false; if(SY.again){ SY.again=false; syncNow(); }
+}
+async function syncConnect(token){
+  ST.sync={token:token.trim(),hash:{},t:{},del:{}};
+  try{
+    const list=await gh("/gists?per_page=100"), f=list.find(g=>g.files&&g.files[SYNC_FILE]);
+    if(f) ST.sync.gistId=f.id; else await gistNew({v:1,recs:{},del:{}});
+    save(); await syncNow();
+    if(SY.state==="err") throw new Error(SY.msg);
+    return f?"found":"created";
+  }catch(e){ ST.sync=null; save(); setSyncState("none"); throw e; }
+}
+function setSyncState(k,msg){ SY.state=k; SY.msg=msg||""; syncStatus(); }
+function syncStatus(){
+  const el=$("sideSync"); if(!el||!ST) return;
+  const on=ST.sync&&ST.sync.gistId; el.hidden=!on; if(!on){ const c=$("syState"); if(c) c.textContent=""; return; }
+  const txt=SY.state==="busy"?"Syncing…":SY.state==="off"?"Offline, will sync later":SY.state==="err"?"Sync failed":"Synced "+ago(ST.sync.lastSync);
+  el.innerHTML=`<span class="dot ${SY.state==="busy"?"busy":SY.state==="err"?"err":SY.state==="ok"?"ok":""}"></span>${esc(txt)}`;
+  const c=$("syState"); if(c) c.innerHTML=el.innerHTML+(SY.state==="err"&&SY.msg?` <span class="muted">· ${esc(SY.msg)}</span>`:"");
+}
+function drillToken(){ try{ return JSON.parse(localStorage.getItem("recall-drill-v1")||"null")?.sync?.token||""; }catch(e){ return ""; } }
+function syncCard(){
+  if(ST.sync&&ST.sync.gistId) return `<section class="card" id="syCard"><div class="sec-top"><h3>Sync between devices</h3><span class="tag good">On</span></div>
+    <p class="sy-state" id="syState"></p>
+    <p class="hint">Your notes, assignments and events you added, syllabus imports, done checkmarks and class colors stay the same on every device connected to this GitHub account. Slides and files aren't uploaded: each device downloads them from Moodle. Files you add by hand stay on the device you added them on.</p>
+    <div class="btnrow"><button class="btn primary small" data-act="syncNotes">Sync now</button><button class="link danger" data-act="syncOff">Turn off on this device</button></div></section>`;
+  const dt=drillToken();
+  const form=`<ol class="steps"><li>On github.com, go to <b>Settings → Developer settings → Personal access tokens → Tokens (classic)</b>.</li><li>Choose <b>Generate new token (classic)</b>, tick only <b>gist</b>, set expiration to <b>No expiration</b>, and generate it.</li><li>Paste it below. Use the same token on your other devices.</li></ol>
+    <form class="form" id="syForm" style="margin-top:4px"><label>GitHub token<input class="in" id="syTok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" style="font-family:var(--mono)"></label><p class="err" id="syErr" hidden></p><div class="btnrow"><button class="btn ${dt?"":"primary"} small" id="syGo">Turn on sync</button></div></form>`;
+  return `<section class="card" id="syCard"><h3>Sync between devices</h3>
+    <p class="muted" style="margin:0">Keep your notes the same on your Mac and your phone. Sync uses a private Gist (a small private file) in your GitHub account, the same way Recall Drill does.</p>
+    ${dt?`<div class="btnrow"><button class="btn primary small" data-act="syncDrill">Use my Recall Drill GitHub connection</button></div><p class="hint">Recall Drill on this device is already connected to GitHub, so Recall Notes can use the same account.</p><details class="more"><summary>Use a different token</summary>${form}</details>`:form}
+    <p class="err" id="syErr2" hidden></p>
+    <p class="hint">If this account already has Recall Notes data from another device, it's merged with what's here. Nothing is overwritten.</p></section>`;
+}
+function wireSyncCard(){
+  syncStatus();
+  const f=$("syForm"); if(!f) return;
+  f.onsubmit=async e=>{ e.preventDefault(); const t=$("syTok").value.trim(); if(!t) return; await doSyncConnect(t,$("syGo"),$("syErr")); };
+}
+async function doSyncConnect(tok,btn,errEl){
+  if(!navigator.onLine){ errEl.hidden=false; errEl.textContent="You're offline. Connect to the internet to turn on sync."; return; }
+  const lbl=btn.textContent; btn.disabled=true; btn.textContent="Connecting…"; errEl.hidden=true;
+  try{ const r=await syncConnect(tok); toast(r==="found"?"Sync is on. Merged with your other devices.":"Sync is on. This device's notes are saved to GitHub."); render(true); }
+  catch(err){ btn.disabled=false; btn.textContent=lbl; errEl.hidden=false; errEl.textContent=err.message||"Couldn't reach GitHub."; }
+}
+const MAC_CMD="curl -fsSL https://izzyrey06.github.io/recall-drill/notes/install-mac.sh | bash";
+function macCard(){
+  if(!/Mac/.test(navigator.platform||navigator.userAgent)||/iPhone|iPad/.test(navigator.userAgent)) return "";
+  return `<section class="card"><h3>Install on this Mac</h3><p class="muted" style="margin:0">Paste this into Terminal to add Recall Notes to your Applications folder with its own icon:</p>
+    <div class="cmd"><code>${esc(MAC_CMD)}</code><button class="btn small" data-act="copyCmd">Copy</button></div>
+    <p class="hint">Or in Safari choose <b>File → Add to Dock</b>; in Chrome, click the install icon in the address bar.</p></section>`;
+}
 
 /* ============ Moodle web service client ============ */
 class MoodleError extends Error{ constructor(msg,code){ super(msg); this.code=code; } }
@@ -624,6 +779,7 @@ async function syncAssignments(courses){
     const c=byMoodle[cr.id]; if(!c) continue;
     for(const a of cr.assignments||[]){
       const id="a"+a.id; seen.add(id); const old=ST.assignments[id]||{};
+      if(!ST.assignments[id]&&ST.syncPending?.["f:"+id]) old.done=true;
       ST.assignments[id]=Object.assign(old,{id,courseId:c.id,moodleId:a.id,cmid:a.cmid,name:a.name,due:(a.duedate||0)*1000,cutoff:(a.cutoffdate||0)*1000,opens:(a.allowsubmissionsfromdate||0)*1000,
         intro:cleanHtml(a.intro||""),url:`${ST.moodle.site}/mod/assign/view.php?id=${a.cmid}`});
       for(const f of a.introattachments||[]){
@@ -814,7 +970,7 @@ function makeOutline(m,open){
   } else if(t&&t.md){ body.push(t.md); }
   else if(t&&t.text){ body.push(...t.text.split(/\n+/).slice(0,80).map(l=>"- "+trimTo(l,180))); }
   else body.push("");
-  const n=newNote({courseId:m.courseId,sectionId:m.sectionId,title:m.name.replace(/\.[a-z0-9]{2,5}$/i,""),body:body.join("\n"),materialId:m.id,auto:true});
+  const n=newNote({...(open?{}:{id:"na"+hash(m.id)}),courseId:m.courseId,sectionId:m.sectionId,title:m.name.replace(/\.[a-z0-9]{2,5}$/i,""),body:body.join("\n"),materialId:m.id,auto:true});
   ST.outlined[m.id]=n.id; save();
   if(open) location.hash="#/n/"+n.id;
   return n;
@@ -828,7 +984,8 @@ function notesFor(mid){ return Object.values(ST.notes).filter(n=>n.materialId===
 /* ============ Markdown (small, escaped first) ============ */
 function inline(s){
   s=esc(s);
-  s=s.replace(/\[\[([a-z0-9-]+)\]\]/gi,(x,id)=>{ const m=ST.materials[id]; return m?`<a class="matref" href="#/m/${esc(id)}">${IC[m.kind]?`<span class="kind ${m.kind}" style="width:18px;height:18px;background:none">${IC[m.kind]}</span>`:""}${esc(m.name)}</a>`:x; });
+  s=s.replace(/\[\[([a-z0-9-]+)\]\]/gi,(x,id)=>{ const m=ST.materials[id]; if(!m) return `<span class="matref" title="Added on another device, so the file itself is only there">📎 File from another device</span>`;
+    return m?`<a class="matref" href="#/m/${esc(id)}">${IC[m.kind]?`<span class="kind ${m.kind}" style="width:18px;height:18px;background:none">${IC[m.kind]}</span>`:""}${esc(m.name)}</a>`:x; });
   s=s.replace(/`([^`]+)`/g,"<code>$1</code>")
      .replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
      .replace(/(^|[^*])\*([^*\s][^*]*)\*/g,"$1<em>$2</em>")
@@ -1013,7 +1170,7 @@ function courseView(){
     <nav class="tabs" aria-label="Class sections"><a href="#/c/${c.id}/materials" ${tab==="materials"?'aria-current="page"':""}>Slides & files <span>${mats.length}</span></a><a href="#/c/${c.id}/notes" ${tab==="notes"?'aria-current="page"':""}>Notes <span>${notes.length}</span></a><a href="#/c/${c.id}/assignments" ${tab==="assignments"?'aria-current="page"':""}>Assignments <span>${asg.filter(a=>!a.done&&!a.submitted).length}</span></a></nav>
     ${body}`;
   if(tab==="materials") wireDrop(c);
-  const cn=$("cName"); if(cn) cn.onchange=()=>{ c.name=cn.value.trim()||c.name; save(); render(); };
+  const cn=$("cName"); if(cn) cn.onchange=()=>{ c.name=cn.value.trim()||c.name; c.renamed=true; save(); render(); };
 }
 const secOf=(secs,id)=>id&&secs.some(x=>x.id===id)?id:"upl";
 function sectionsOf(c){
@@ -1061,7 +1218,7 @@ function noteView(){
     ${m?`<aside class="viewer-pane card" id="vPane" aria-label="Source"></aside>`:""}
   </div>`;
   const body=$("nBody"), title=$("nTitle");
-  const touch=()=>{ n.updatedAt=Date.now(); $("nSaved").textContent="Saving…"; save(); clearTimeout(touch.t); touch.t=setTimeout(()=>{ const s=$("nSaved"); if(s) s.textContent="Saved"; },600); };
+  const touch=()=>{ n.updatedAt=Date.now(); n.auto=false; $("nSaved").textContent="Saving…"; save(); clearTimeout(touch.t); touch.t=setTimeout(()=>{ const s=$("nSaved"); if(s) s.textContent="Saved"; },600); };
   title.oninput=()=>{ n.title=title.value; touch(); };
   body.oninput=()=>{ n.body=body.value; touch(); };
   body.onkeydown=e=>editorKeys(e,body);
@@ -1438,7 +1595,8 @@ function connectView(){
       <ol class="steps"><li>On the Moodle website, open your profile menu and choose <b>Preferences</b>, then <b>Security keys</b>.</li><li>Copy the key next to <b>Moodle mobile web service</b>. If there isn't one, open the official Moodle app once and sign in, then check again.</li><li>Paste it below along with the Moodle address above.</li></ol>
       <div class="form" style="margin-top:10px"><label>Security key<input class="in" id="cTok" spellcheck="false" autocomplete="off" style="font-family:var(--mono)"></label><div class="btnrow"><button class="btn" id="cTokGo">Connect with key</button></div></div>
       <p class="hint" style="margin-top:10px">Some schools turn off app access entirely. You can still make classes yourself and drop in slides you download from Moodle. They get sorted and outlined the same way.</p>
-    </details></section>`}`;
+    </details></section>`}${syncCard()}${macCard()}`;
+  wireSyncCard();
   if(m){
     $("setDl").onchange=e=>{ s.autoDownload=e.target.checked; save(); if(s.autoDownload&&!SYNC.on) syncAll(); };
     $("setMax").onchange=e=>{ s.maxMB=Math.max(1,+e.target.value||40); save(); };
@@ -1479,7 +1637,8 @@ async function pickView(){
       const ex=have[mc.id];
       if(ids.includes(mc.id)){
         const c=ex||(ST.courses["c"+mc.id]={id:"c"+mc.id,moodleId:mc.id,color:COLORS[i++%COLORS.length],sections:[],order:i});
-        Object.assign(c,{name:ex?.renamed?c.name:mc.name,short:mc.short,archived:false,moodleUrl:`${ST.moodle.site}/course/view.php?id=${mc.id}`}); only.push(c.id);
+        Object.assign(c,{name:ex?.renamed?c.name:mc.name,short:mc.short,archived:false,moodleUrl:`${ST.moodle.site}/course/view.php?id=${mc.id}`});
+        const pk=ST.syncPending?.["k:"+c.id]; if(pk){ if(pk.color) c.color=pk.color; if(pk.name){ c.name=pk.name; c.renamed=true; } } only.push(c.id);
       } else if(ex) ex.archived=true;
     }
     save(); location.hash="#/"; syncAll(only);
@@ -1583,6 +1742,10 @@ document.addEventListener("click",async e=>{
   const a=t.dataset.act, id=t.dataset.id;
   if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
   if(a==="sync") syncAll();
+  else if(a==="syncNotes") syncNow();
+  else if(a==="syncOff"){ if(!confirm("Turn off sync on this device? Your notes stay here and in GitHub.")) return; ST.sync=null; save(); setSyncState("none"); render(true); }
+  else if(a==="syncDrill") doSyncConnect(drillToken(),t,$("syErr2"));
+  else if(a==="copyCmd"){ try{ await navigator.clipboard.writeText(MAC_CMD); toast("Copied. Paste it into Terminal."); }catch(e){ toast("Select the command and copy it."); } }
   else if(a.startsWith("sc")) scanAction(a);
   else if(a==="ics") exportIcs();
   else if(a==="delEvent"){ delete ST.events[id]; save(); render(); toast("Event deleted"); }
@@ -1642,7 +1805,11 @@ addEventListener("scroll",()=>$("topbar").classList.toggle("scrolled",scrollY>4)
   catch(e){ toast("This browser won't let the app store data, so notes will be lost when you close it."); }
   ST=Object.assign(blank(),ST||{}); ST.settings=Object.assign(blank().settings,ST.settings||{});
   try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
-  route(); syncLine();
+  route(); syncLine(); syncStatus();
+  if(ST.sync&&ST.sync.gistId) syncNow();
+  addEventListener("online",()=>syncNow());
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncNow(); });
+  setInterval(()=>{ if(document.visibilityState==="visible") syncNow(); },60000);
   // Pick up anything new from Moodle every few hours, when the app is opened
   if(ST.moodle&&navigator.onLine&&Date.now()-(ST.moodle.lastSync||0)>3*3600e3) syncAll();
   const sp=VIEW.q.get("p"); if(VIEW.name==="m"&&sp) setTimeout(()=>$("pg-"+sp)?.scrollIntoView(),400);
