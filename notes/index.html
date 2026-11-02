@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
 <title>Recall Notes</title>
-<meta name="app-version" content="2026.11.02-8">
+<meta name="app-version" content="2026.11.02-9">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;650;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 :root{
@@ -396,7 +396,7 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
     <label class="term-box"><span class="vh">Semester</span><select id="termSel" class="term-sel"></select></label>
     <a class="nav-a" id="navHome" href="#/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4.5v-6h-5v6H5a1 1 0 01-1-1z"/></svg><span class="nm">Home</span></a>
     <a class="nav-a" id="navCal" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><span class="nm">Calendar</span></a>
-    <a class="nav-a" id="navLib" href="#/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 015.5 4H9v16H5.5A1.5 1.5 0 014 18.5zM9 4h4v16H9zM14.5 5.2l3.4-.9 2.6 15.2-3.4.9z"/></svg><span class="nm">Library</span></a>
+    <a class="nav-a" id="navLib" href="#/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 015.5 4H9v16H5.5A1.5 1.5 0 014 18.5zM9 4h4v16H9zM14.5 5.2l3.4-.9 2.6 15.2-3.4.9z"/></svg><span class="nm">Your semesters</span></a>
     <a class="nav-a" id="navSearch" href="#/search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span class="nm">Search</span></a>
     <div class="side-h"><span>Classes</span><a href="#/add" title="Add a class" aria-label="Add a class">+</a></div>
     <nav id="sideCourses" style="display:grid;gap:2px" aria-label="Classes"></nav>
@@ -1169,7 +1169,7 @@ function courseOptions(sel){ // every class, grouped by semester
 function termPicker(){
   const el=$("termSel"); if(!el||!ST) return;
   const cur=curTerm();
-  el.innerHTML=termList().map(t=>`<option value="${t.id}" ${t.id===cur?"selected":""}>${esc(t.name)}</option>`).join("")+`<option value="all" ${cur==="all"?"selected":""}>All semesters</option><option disabled>──────────</option><option value="__lib">Open library…</option>`;
+  el.innerHTML=termList().map(t=>`<option value="${t.id}" ${t.id===cur?"selected":""}>${esc(t.name)}</option>`).join("")+`<option value="all" ${cur==="all"?"selected":""}>All semesters</option><option disabled>──────────</option><option value="__lib">See your semesters…</option>`;
 }
 function setTerm(id){ ST.currentTerm=id; save(); termPicker(); render(true); }
 function assignRow(a,showCourse){
@@ -1759,7 +1759,7 @@ function libraryView(){
   const tid=VIEW.id&&ST.terms[VIEW.id]?VIEW.id:null, cur=curTerm();
   if(tid){
     const t=ST.terms[tid], st=termStats(tid);
-    main.innerHTML=`<div class="crumb"><a href="#/library">Library</a><span>›</span></div>
+    main.innerHTML=`<div class="crumb"><a href="#/library">Your semesters</a><span>›</span></div>
       <div class="sec-top"><div><p class="eyebrow">Semester</p><h2>${esc(t.name)} ${tid===cur?'<span class="tag acc" style="vertical-align:middle">Current</span>':""}</h2></div>
         <span class="btnrow">${tid!==cur?`<button class="btn primary small" data-act="useTerm" data-id="${tid}">Switch to this semester</button>`:""}<button class="btn small" data-act="renameTerm" data-id="${tid}">Rename</button>${st.cs.length?"":`<button class="btn small danger" data-act="delTerm" data-id="${tid}">Delete</button>`}</span></div>
       <div class="stats"><div class="stat"><b>${st.cs.length}</b><span>Classes</span></div><div class="stat"><b>${st.decks}</b><span>Slide decks</span></div><div class="stat"><b>${st.notes}</b><span>Notes</span></div><div class="stat"><b>${st.done}/${st.asg}</b><span>Assignments done</span></div></div>
@@ -1768,7 +1768,7 @@ function libraryView(){
     return;
   }
   const ts=termList();
-  main.innerHTML=`<div class="sec-top"><div><p class="eyebrow">Library</p><h2>Your semesters</h2></div>
+  main.innerHTML=`<div class="sec-top"><div><p class="eyebrow">${esc(ST.moodle?.sitename||"Recall Notes")}</p><h2>Your semesters</h2></div>
       <span class="btnrow">${ST.moodle?`<a class="btn small" href="#/pick">Import past classes from Moodle</a>`:""}<button class="btn small primary" data-act="newTerm">+ New semester</button></span></div>
     <p class="hint">Pick a semester to see just its classes, assignments and calendar. Everything from past semesters stays here and stays searchable.</p>
     ${ts.length?`<div class="term-grid">${ts.map(t=>{ const st=termStats(t.id); return `<a class="term-card${t.id===cur?" cur":""}" href="#/library/${t.id}">
