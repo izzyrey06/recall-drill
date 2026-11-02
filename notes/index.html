@@ -296,11 +296,56 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
   .toolbar{top:60px}
   .editor,.md{padding:16px}
 }
+
+/* ---------- Calendar ---------- */
+.cal-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.seg-nav{display:inline-flex;gap:4px}
+.seg-nav .btn{min-width:36px;font-size:.95rem}
+.cal-layout{display:grid;gap:18px;align-items:start}
+@media (min-width:1100px){.cal-layout{grid-template-columns:minmax(0,1fr) 340px}.cal-side{position:sticky;top:76px}}
+.cal-side{display:grid;gap:14px;min-width:0}
+.cal{padding:0;gap:0;overflow:hidden}
+.cal-wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.cal-wd span{padding:10px 10px 8px;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-day{font:inherit;color:var(--ink);text-align:left;display:flex;flex-direction:column;gap:4px;min-height:112px;min-width:0;padding:8px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface);cursor:pointer;transition:background .12s}
+.cal-day:nth-child(7n){border-right:0}
+.cal-day:hover{background:var(--surface-2)}
+.cal-day.out{background:color-mix(in srgb,var(--surface-2) 55%,var(--surface))}
+.cal-day.out .dn{color:var(--muted);opacity:.6}
+.cal-day .dn{font-size:.82rem;font-weight:600;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;font-variant-numeric:tabular-nums}
+.cal-day.today .dn{background:var(--accent);color:var(--accent-ink)}
+.cal-day.sel{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accent-soft)}
+.cal-day:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.evs{display:grid;gap:3px;min-width:0}
+.ev{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;line-height:1.25;padding:2px 6px;border-radius:6px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--ink);min-width:0}
+.ev i{width:6px;height:6px;border-radius:2px;background:var(--c);flex:none}
+.ev span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.done{opacity:.5} .ev.done span{text-decoration:line-through}
+.ev.late{box-shadow:inset 0 0 0 1px var(--bad)}
+.more{font-size:.72rem;color:var(--muted);font-weight:600;padding-left:4px}
+.dots{display:none;gap:3px;justify-content:center}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+@media (max-width:700px){
+  .cal-day{min-height:58px;align-items:center;padding:6px 2px}
+  .evs{display:none} .dots{display:flex}
+  .cal-wd span{text-align:center;padding:8px 0;font-size:.66rem}
+}
+.up{display:grid;gap:4px}
+.cc{display:inline-flex;gap:6px;align-items:center;min-width:0}
+.cal-side .row{grid-template-columns:auto minmax(0,1fr)}
+.cal-side .row .acts{grid-column:2;justify-content:flex-start}
+.up-row{display:flex;gap:12px;align-items:center;padding:8px;border-radius:10px;text-decoration:none;color:var(--ink);min-width:0}
+.up-row:hover{background:var(--surface-2)}
+.up-date{width:42px;height:44px;border-radius:10px;display:grid;place-items:center;align-content:center;flex:none;background:color-mix(in srgb,var(--c) 14%,transparent);line-height:1.05}
+.up-date b{font-family:var(--display);font-size:1.05rem;color:var(--c)} .up-date small{font-size:.66rem;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.up-txt{display:grid;min-width:0} .up-txt b{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .up-txt small{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head><body><div class="app">
   <aside class="side" id="side" aria-label="Navigation">
     <a class="brand" href="#/"><img src="icon-192.png" alt="" width="30" height="30"><span>Recall Notes</span></a>
     <a class="nav-a" id="navHome" href="#/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4.5v-6h-5v6H5a1 1 0 01-1-1z"/></svg><span class="nm">Home</span></a>
+    <a class="nav-a" id="navCal" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><span class="nm">Calendar</span></a>
     <a class="nav-a" id="navSearch" href="#/search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span class="nm">Search</span></a>
     <div class="side-h"><span>Classes</span><a href="#/add" title="Add a class" aria-label="Add a class">+</a></div>
     <nav id="sideCourses" style="display:grid;gap:2px" aria-label="Classes"></nav>
@@ -376,7 +421,7 @@ const DB=(()=>{
   };
 })();
 let ST, TEXT={};
-function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
+function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},events:{},outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
 let saveT;
 function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); }
 function flush(){ clearTimeout(saveT); saveT=null; if(!ST) return Promise.resolve(); return DB.put("kv","state",ST).catch(e=>toast("Couldn't save on this device: "+(e.message||e))); }
@@ -478,6 +523,7 @@ function sideNav(){
   const now=Date.now(), cur=VIEW.name==="c"?VIEW.id:VIEW.name==="n"?ST.notes[VIEW.id]?.courseId:VIEW.name==="m"?ST.materials[VIEW.id]?.courseId:null;
   $("navHome").setAttribute("aria-current",VIEW.name==="home"?"page":"false");
   $("navSearch").setAttribute("aria-current",VIEW.name==="search"?"page":"false");
+  $("navCal").setAttribute("aria-current",VIEW.name==="cal"?"page":"false");
   $("navMoodle").setAttribute("aria-current",VIEW.name==="connect"||VIEW.name==="pick"?"page":"false");
   const cs=courses();
   $("sideCourses").innerHTML=cs.length?cs.map(c=>{ const n=Object.values(ST.assignments).filter(a=>a.courseId===c.id&&!a.done&&!a.submitted&&a.due&&a.due<now+7*DAY).length;
@@ -493,6 +539,8 @@ async function syncAll(only){
     for(const c of courses){ SYNC.label="Reading "+c.name; syncLine(); await syncCourse(c); save(); render(); }
     SYNC.label="Getting assignments"; syncLine();
     await syncAssignments(courses);
+    SYNC.label="Getting calendar events"; SYNC.total=0; syncLine();
+    await syncEvents(courses);
     ST.moodle.lastSync=Date.now(); save(); render();
     await downloadQueue();
     const nm=Object.keys(ST.materials).length-before, na=Object.keys(ST.assignments).length-beforeA;
@@ -583,6 +631,21 @@ async function syncAssignments(courses){
     catch(e){ if(e.code==="invalidtoken") throw e; }
     SYNC.done++; syncLine();
   });
+}
+async function syncEvents(courses){
+  if(!courses.length||!can("core_calendar_get_calendar_events")) return;
+  const now=Math.floor(Date.now()/1000), byM=Object.fromEntries(courses.map(c=>[c.moodleId,c]));
+  let r;
+  try{ r=await ws("core_calendar_get_calendar_events",{events:{courseids:courses.map(c=>c.moodleId)},options:{userevents:1,siteevents:1,timestart:now-60*86400,timeend:now+240*86400}}); }
+  catch(e){ if(e.code==="invalidtoken") throw e; return; }
+  const ids=new Set(courses.map(c=>c.id));
+  for(const e of Object.values(ST.events)) if(!e.mine&&(!e.courseId||ids.has(e.courseId))) delete ST.events[e.id];
+  for(const e of r.events||[]){
+    if(e.modulename==="assign"&&ST.assignments["a"+e.instance]) continue; // already shown as an assignment
+    const c=byM[e.courseid], start=(e.timestart||0)*1000; if(!start) continue;
+    ST.events["e"+e.id]={id:"e"+e.id,title:e.name||"Event",start,end:start+(e.timeduration||0)*1000,courseId:c?c.id:null,type:e.modulename||e.eventtype||"event",
+      desc:trimTo(htmlText(e.description||""),400),url:e.url||(e.modulename&&e.instance&&c?`${ST.moodle.site}/mod/${e.modulename}/view.php?id=${e.instance}`:"")};
+  }
 }
 function sectionOfCm(c,cmid){ return (c.cmSec&&c.cmSec[cmid])||null; }
 async function pool(items,n,fn){ let i=0; await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{ while(i<items.length) await fn(items[i++]); })); }
@@ -788,7 +851,7 @@ function route(){
   if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
   const h=decodeURI(location.hash.slice(1)||"/"), [path,qs]=h.split("?"), p=path.split("/").filter(Boolean), q=new URLSearchParams(qs||"");
   VIEW={name:p[0]||"home",id:p[1],tab:p[2],q};
-  main.classList.toggle("wide",VIEW.name==="n"); document.body.classList.remove("nav-open");
+  main.classList.toggle("wide",VIEW.name==="n"||VIEW.name==="cal"); document.body.classList.remove("nav-open");
   render(true);
   if(VIEW.name!=="search"&&document.activeElement!==$("q")) $("q").value="";
 }
@@ -798,7 +861,8 @@ function render(nav){
   if(!ST) return;
   hdr();
   // Don't wipe a note while someone's typing in it
-  const v=VIEW.name, y=nav?0:scrollY;
+  const v=VIEW.name, y=nav?0:scrollY, ae=document.activeElement;
+  if(!nav&&ae&&main.contains(ae)&&ae.matches("input,textarea,select")) return;
   if(!nav&&["n","m","pick","add","connect"].includes(v)&&!(v==="connect"&&ST.moodle)) return;
   if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
   if(v==="home") homeView();
@@ -809,6 +873,7 @@ function render(nav){
   else if(v==="pick") pickView();
   else if(v==="search") searchView();
   else if(v==="add") addCourseView();
+  else if(v==="cal") calView();
   else homeView();
   if(nav) scrollTo(0,0); else scrollTo(0,y);
 }
@@ -820,7 +885,7 @@ function assignRow(a,showCourse){
   const n=Object.values(ST.notes).find(x=>x.assignId===a.id);
   return `<div class="row${fin?" done-row":""}" style="--c:${courseColor(a.courseId)}">
     <input type="checkbox" class="ck" data-act="assignDone" data-id="${a.id}" ${fin?"checked":""} ${a.submitted?"disabled title=\"Submitted on Moodle\"":`aria-label="Mark ${esc(a.name)} done"`}>
-    <a class="row-open" href="#/c/${a.courseId}/assignments?a=${a.id}"><b>${esc(a.name)}</b><small>${showCourse?`<span class="cdot"></span>${esc(courseName(a.courseId))}`:""}
+    <a class="row-open" href="#/c/${a.courseId}/assignments?a=${a.id}"><b>${esc(a.name)}</b><small>${showCourse?`<span class="cc"><span class="cdot"></span>${esc(courseName(a.courseId))}</span>`:""}
       <span class="due">${esc(fmtDue(a.due))}</span>${a.submitted?'<span class="tag good">Submitted</span>':a.done?'<span class="tag good">Done</span>':late?'<span class="tag bad">Overdue</span>':soon?'<span class="tag warn">Due soon</span>':""}${a.grade?`<span class="tag acc">Grade ${esc(a.grade)}</span>`:""}</small></a>
     <div class="acts">${n?`<a class="btn small" href="#/n/${n.id}">${IC.note}Notes</a>`:`<button class="btn small" data-act="assignNote" data-id="${a.id}">${IC.note}Plan it</button>`}${a.url?`<a class="btn small" href="${esc(a.url)}" target="_blank" rel="noopener">Moodle</a>`:""}</div></div>`;
 }
@@ -881,7 +946,7 @@ function homeView(){
     <div class="stats"><div class="stat"><b>${week}</b><span>Due this week</span></div><div class="stat ${late?"bad":""}"><b>${late}</b><span>Overdue</span></div><div class="stat"><b>${decks}</b><span>Slide decks</span></div><div class="stat"><b>${Object.keys(ST.notes).length}</b><span>Notes</span></div></div>
     <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""} title="Last synced ${esc(ago(m.lastSync))}">${IC.sync}Sync</button>`:""}<a class="btn small" href="#/add">+ Add class</a></span></div>
       <div class="grid">${cs.map(courseCard).join("")}</div></section>
-    <section class="group"><div class="group-h"><h2>Coming up</h2></div>
+    <section class="group"><div class="group-h"><h2>Coming up</h2><a class="btn small" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Calendar</a></div>
       ${days.length?days.map(d=>`<div class="day"><div class="day-h ${d.cls}">${esc(d.l)}</div><div class="list">${d.items.map(a=>assignRow(a,true)).join("")}</div></div>`).join("")
         :`<p class="empty">${Object.keys(ST.assignments).length?"Nothing due in the next three weeks. 🎉":"No assignments yet."}</p>`}</section>
     <section class="group"><div class="group-h"><h2>Recent notes</h2><button class="btn small" data-act="newNote">+ New note</button></div>
@@ -1089,6 +1154,82 @@ async function openFile(m){
   const a=document.createElement("a"); a.href=u; a.target="_blank"; a.rel="noopener"; if(!/pdf|image|text/.test(blob.type||m.mime)) a.download=m.file||m.name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),60000);
 }
 
+/* ---------- Calendar ---------- */
+const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const fromKey=k=>{ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d||1); };
+const EV_LABEL={quiz:"Quiz",exam:"Exam",course:"Class event",user:"Personal",site:"School event",forum:"Forum",lesson:"Lesson",workshop:"Workshop",mine:"Your event"};
+function calItems(){
+  const out=[];
+  for(const a of Object.values(ST.assignments)) if(a.due&&!ST.courses[a.courseId]?.archived)
+    out.push({t:a.due,title:a.name,courseId:a.courseId,kind:"assign",id:a.id,done:!!(a.done||a.submitted),a});
+  for(const e of Object.values(ST.events)) if(!e.courseId||!ST.courses[e.courseId]?.archived)
+    out.push({t:e.start,title:e.title,courseId:e.courseId,kind:"event",id:e.id,e,allDay:!!e.allDay});
+  return out.sort((x,y)=>(x.allDay?0:1)-(y.allDay?0:1)||x.t-y.t);
+}
+function calView(){
+  const today=new Date(), m=VIEW.q.get("m")||dkey(today).slice(0,7), first=fromKey(m+"-01");
+  if(isNaN(first)) { location.hash="#/cal"; return; }
+  const sel=VIEW.q.get("d")||(dkey(today).startsWith(m)?dkey(today):m+"-01");
+  const y=first.getFullYear(), mo=first.getMonth(), dim=new Date(y,mo+1,0).getDate(), lead=first.getDay(), weeks=Math.ceil((lead+dim)/7);
+  const items=calItems(), byDay={}; for(const it of items){ (byDay[dkey(new Date(it.t))] ||= []).push(it); }
+  const mk=(dy,dd)=>{ const d=new Date(dy); d.setDate(d.getDate()+dd); return d; };
+  const prev=dkey(new Date(y,mo-1,1)).slice(0,7), next=dkey(new Date(y,mo+1,1)).slice(0,7);
+  const tk=dkey(today), now=Date.now();
+  const chip=it=>`<span class="ev${it.done?" done":""}${it.kind==="assign"&&!it.done&&it.t<now?" late":""}" style="--c:${courseColor(it.courseId)}"><i></i><span>${esc(it.title)}</span></span>`;
+  const cells=[]; const start=new Date(y,mo,1-lead);
+  for(let i=0;i<weeks*7;i++){
+    const d=mk(start,i), k=dkey(d), its=byDay[k]||[], out=d.getMonth()!==mo;
+    cells.push(`<button class="cal-day${out?" out":""}${k===tk?" today":""}${k===sel?" sel":""}" data-go="#/cal?m=${k.slice(0,7)}&d=${k}" aria-label="${esc(d.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"}))}${its.length?`, ${its.length} item${its.length===1?"":"s"}`:""}" ${k===sel?'aria-pressed="true"':""}>
+      <span class="dn">${d.getDate()}</span><span class="evs">${its.slice(0,3).map(chip).join("")}${its.length>3?`<span class="more">+${its.length-3} more</span>`:""}</span>
+      ${its.length?`<span class="dots">${its.slice(0,4).map(it=>`<i style="--c:${courseColor(it.courseId)}"></i>`).join("")}</span>`:""}</button>`);
+  }
+  const wd=[...Array(7)].map((_,i)=>new Date(2026,1,1+i).toLocaleDateString([], {weekday:"short"}));
+  const sd=fromKey(sel), dayIts=byDay[sel]||[];
+  const evRow=it=>{ const e=it.e, time=e.allDay?"All day":new Date(e.start).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+(e.end>e.start?"–"+new Date(e.end).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):"");
+    return `<div class="row"><span class="kind" style="color:${courseColor(e.courseId)}">${CAL_IC}</span><div class="row-open"><b>${esc(e.title)}</b>
+      <small>${e.courseId?`<span class="cc"><span class="cdot" style="--c:${courseColor(e.courseId)}"></span>${esc(courseName(e.courseId))}</span>`:""}<span class="due">${esc(time)}</span><span class="tag">${esc(EV_LABEL[e.mine?"mine":e.type]||"Event")}</span></small>
+      ${e.desc?`<span class="snip">${esc(e.desc)}</span>`:""}</div>
+      <div class="acts">${e.url?`<a class="btn small" href="${esc(e.url)}" target="_blank" rel="noopener">Moodle</a>`:""}${e.mine?`<button class="btn small danger" data-act="delEvent" data-id="${e.id}">Delete</button>`:""}</div></div>`; };
+  const upcoming=items.filter(it=>it.t>=dayStart(now)&&!it.done).slice(0,8);
+  main.innerHTML=`<div class="cal-top"><div><p class="eyebrow">Calendar</p><h2>${esc(first.toLocaleDateString([], {month:"long",year:"numeric"}))}</h2></div>
+      <div class="btnrow"><div class="seg-nav"><a class="btn small" href="#/cal?m=${prev}" aria-label="Previous month">‹</a><a class="btn small" href="#/cal?m=${tk.slice(0,7)}&d=${tk}">Today</a><a class="btn small" href="#/cal?m=${next}" aria-label="Next month">›</a></div>
+      <button class="btn small" data-act="ics" title="Download a calendar file you can import into Google, Apple or Outlook Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Export</button></div></div>
+    <div class="cal-layout">
+      <div class="cal card"><div class="cal-wd">${wd.map(w=>`<span>${esc(w)}</span>`).join("")}</div><div class="cal-grid" style="grid-template-rows:repeat(${weeks},minmax(0,1fr))">${cells.join("")}</div></div>
+      <aside class="cal-side">
+        <section class="card" style="gap:12px"><div class="sec-top"><h3>${esc(sd.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"}))}</h3></div>
+          ${dayIts.length?`<div class="list">${dayIts.map(it=>it.kind==="assign"?assignRow(it.a,true):evRow(it)).join("")}</div>`:`<p class="hint">Nothing on this day.</p>`}
+          <details class="more" id="addEv"><summary>+ Add an event</summary>
+            <form class="form" id="evForm" style="margin-top:12px">
+              <label>What<input class="in" id="evTitle" placeholder="e.g. Study group, Midterm" required maxlength="120"></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Date<input class="in" type="date" id="evDate" value="${sel}" required></label><label>Time <small>optional</small><input class="in" type="time" id="evTime"></label></div>
+              <label>Class<select class="in" id="evCourse"><option value="">No class</option>${courses().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>
+              <div class="btnrow"><button class="btn primary small">Add</button></div></form></details></section>
+        <section class="card" style="gap:10px"><h3>Next up</h3>${upcoming.length?`<div class="up">${upcoming.map(it=>`<a href="#/cal?m=${dkey(new Date(it.t)).slice(0,7)}&d=${dkey(new Date(it.t))}" class="up-row" style="--c:${courseColor(it.courseId)}"><span class="up-date"><b>${new Date(it.t).getDate()}</b><small>${esc(new Date(it.t).toLocaleDateString([], {month:"short"}))}</small></span><span class="up-txt"><b>${esc(it.title)}</b><small>${esc(it.courseId?courseName(it.courseId):"")}${it.allDay?"":" · "+esc(new Date(it.t).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}))}</small></span></a>`).join("")}</div>`:`<p class="hint">Nothing coming up.</p>`}</section>
+      </aside></div>`;
+  $("evForm").onsubmit=e=>{ e.preventDefault(); const title=$("evTitle").value.trim(), d=$("evDate").value, t=$("evTime").value; if(!title||!d) return;
+    const start=new Date(`${d}T${t||"00:00"}`).getTime(); if(isNaN(start)) return;
+    const id="u"+uid(); ST.events[id]={id,title,start,end:start,allDay:!t,courseId:$("evCourse").value||null,mine:true,type:"mine"}; save();
+    location.hash=`#/cal?m=${d.slice(0,7)}&d=${d}`; toast("Added to your calendar"); };
+}
+const CAL_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>';
+function exportIcs(){
+  const pad=n=>String(n).padStart(2,"0"), utc=t=>{ const d=new Date(t); return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`; };
+  const day=t=>{ const d=new Date(t); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; };
+  const txt=s=>String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/[,;]/g,m=>"\\"+m);
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Recall Notes//EN","CALSCALE:GREGORIAN","X-WR-CALNAME:Recall Notes"];
+  for(const it of calItems()){ if(it.t<Date.now()-30*DAY) continue;
+    const cn=it.courseId?courseName(it.courseId):"";
+    L.push("BEGIN:VEVENT",`UID:${it.id}@recall-notes`,`DTSTAMP:${utc(Date.now())}`);
+    if(it.allDay) L.push(`DTSTART;VALUE=DATE:${day(it.t)}`); else L.push(`DTSTART:${utc(it.t)}`,`DTEND:${utc(it.kind==="event"&&it.e.end>it.t?it.e.end:it.t+30*60e3)}`);
+    L.push(`SUMMARY:${txt((it.kind==="assign"?"Due: ":"")+it.title+(cn?` (${cn})`:""))}`);
+    const url=it.kind==="assign"?it.a.url:it.e.url; if(url) L.push(`URL:${txt(url)}`);
+    L.push("END:VEVENT"); }
+  L.push("END:VCALENDAR");
+  const u=URL.createObjectURL(new Blob([L.join("\r\n")+"\r\n"],{type:"text/calendar"})), a=document.createElement("a"); a.href=u; a.download="recall-notes.ics"; a.click(); setTimeout(()=>URL.revokeObjectURL(u),5000);
+  toast("Calendar file downloaded. Open it to add the dates to your calendar app.");
+}
+
 /* ---------- Connect ---------- */
 function connectView(){
   const m=ST.moodle, s=ST.settings;
@@ -1261,6 +1402,8 @@ document.addEventListener("click",async e=>{
   const a=t.dataset.act, id=t.dataset.id;
   if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
   if(a==="sync") syncAll();
+  else if(a==="ics") exportIcs();
+  else if(a==="delEvent"){ delete ST.events[id]; save(); render(); toast("Event deleted"); }
   else if(a==="syncOne") syncAll([id]);
   else if(a==="dismissSync"){ SYNC.err=null; SYNC.msg=null; syncLine(); }
   else if(a==="demo") demo();
@@ -1280,6 +1423,7 @@ document.addEventListener("click",async e=>{
   else if(a==="archive"){ const c=ST.courses[id]; if(!confirm(`Remove “${c.name}” from this device? Its notes stay (with no class), its downloaded files are deleted.`)) return;
     for(const m of Object.values(ST.materials)) if(m.courseId===id) await removeMaterial(m.id);
     for(const x of Object.values(ST.assignments)) if(x.courseId===id) delete ST.assignments[x.id];
+    for(const x of Object.values(ST.events)) if(x.courseId===id&&!x.mine) delete ST.events[x.id];
     for(const n of Object.values(ST.notes)) if(n.courseId===id){ n.courseId=null; n.sectionId=null; }
     if(c.moodleId) Object.assign(c,{archived:true,sections:[]}); else delete ST.courses[id];
     save(); location.hash="#/"; }
