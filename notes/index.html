@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
 <title>Recall Notes</title>
-<meta name="app-version" content="2026.11.02-9">
+<meta name="app-version" content="2026.11.02-10">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;650;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 :root{
@@ -156,7 +156,7 @@ a.stat.bad{border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .course{display:grid;gap:4px;align-content:start;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;overflow:hidden;min-width:0;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
 .course:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-.course-top{height:64px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));margin-bottom:8px}
+.course-top{background:var(--c);height:64px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));margin-bottom:8px}
 .course-top .code{font-family:var(--display);font-weight:700;font-size:.82rem;letter-spacing:.02em;color:#fff;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:7px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .course-top .pill{font-size:.74rem;font-weight:700;color:var(--c);background:#fff;padding:3px 9px;border-radius:99px}
 .course b{font-family:var(--display);font-weight:650;font-size:1rem;line-height:1.3;letter-spacing:-.01em;overflow-wrap:anywhere;padding:0 14px}
@@ -175,7 +175,7 @@ a.stat.bad{border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
 .note-card b{font-family:var(--display);font-weight:650;font-size:1rem;letter-spacing:-.01em;overflow-wrap:anywhere}
 .note-card p{margin:0;font-size:.86rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .note-card small{font-size:.76rem;color:var(--muted)}
-.banner{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:22px 22px 18px;border-radius:var(--r);background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 50%,#000));color:#fff;box-shadow:var(--shadow-lg)}
+.banner{background:var(--c);display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:22px 22px 18px;border-radius:var(--r);background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 50%,#000));color:#fff;box-shadow:var(--shadow-lg)}
 .banner h2{color:#fff;font-size:clamp(1.35rem,3vw,1.8rem)}
 .banner .eyebrow{color:rgba(255,255,255,.75)}
 .banner-txt{display:grid;gap:4px;min-width:0}
@@ -421,6 +421,19 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div id="bootFail" hidden style="position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:var(--bg,#f6f7f9);color:var(--ink,#0f1419);font-family:system-ui,sans-serif;text-align:center">
+  <div style="max-width:440px;display:grid;gap:12px"><b style="font-size:1.3rem">Recall Notes couldn't start</b>
+  <span>This usually means the browser is out of date. Update macOS or iOS (Safari updates with it), or open Recall Notes in Chrome. Then reload.</span>
+  <button onclick="location.reload()" style="font:inherit;font-weight:600;padding:10px 16px;border-radius:10px;border:0;background:#0b7a57;color:#fff;cursor:pointer;justify-self:center">Reload</button>
+  <code id="bootErr" style="font-size:.78rem;opacity:.7;word-break:break-word"></code></div></div>
+<script>
+// Watchdog: written so even very old browsers can run it
+(function(){ var err="";
+  window.addEventListener("error",function(e){ if(!err) err=(e.message||"Error")+(e.lineno?" (line "+e.lineno+")":""); });
+  setTimeout(function(){ if(window.__rnBooted) return; var b=document.getElementById("bootFail"); if(!b) return; b.hidden=false;
+    document.getElementById("bootErr").textContent=(err||"The app didn't finish loading.")+" · "+navigator.userAgent; },8000);
+})();
+</script>
 
 <script>
 /* ============ Basics ============ */
@@ -548,7 +561,7 @@ function applySync(m,local){
     const pend={};
     for(const [k,r] of Object.entries(m.recs)){
       if(local[k]!==undefined&&recHash(local[k])===recHash(r.d)){ if(ST.syncPending?.[k]) pend[k]=r.d; continue; }
-      if(putKey(k,structuredClone(r.d))===false) pend[k]=r.d; else changed=true;
+      if(putKey(k,JSON.parse(JSON.stringify(r.d)))===false) pend[k]=r.d; else changed=true;
     }
     ST.syncPending=pend;
     if(changed) save();
@@ -1466,7 +1479,7 @@ function calView(){
   if(isNaN(first)) { location.hash="#/cal"; return; }
   const sel=VIEW.q.get("d")||(dkey(today).startsWith(m)?dkey(today):m+"-01");
   const y=first.getFullYear(), mo=first.getMonth(), dim=new Date(y,mo+1,0).getDate(), lead=first.getDay(), weeks=Math.ceil((lead+dim)/7);
-  const items=calItems(), byDay={}; for(const it of items){ (byDay[dkey(new Date(it.t))] ||= []).push(it); }
+  const items=calItems(), byDay={}; for(const it of items){ const dk=dkey(new Date(it.t)); (byDay[dk]=byDay[dk]||[]).push(it); }
   const mk=(dy,dd)=>{ const d=new Date(dy); d.setDate(d.getDate()+dd); return d; };
   const prev=dkey(new Date(y,mo-1,1)).slice(0,7), next=dkey(new Date(y,mo+1,1)).slice(0,7);
   const tk=dkey(today), now=Date.now();
@@ -1534,14 +1547,16 @@ const DATE_PATS=[
   [new RegExp(`\\b${MON}\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?!\\d|:\\d)(?:,?\\s*(20\\d{2}))?`,"gi"),m=>[monIdx(m[1]),+m[2],m[3]?+m[3]:0]],
   [new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${MON}\\b\\.?(?:,?\\s*(20\\d{2}))?`,"gi"),m=>[monIdx(m[2]),+m[1],m[3]?+m[3]:0]],
   [/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g,m=>[+m[2]-1,+m[3],+m[1]]],
-  [/(?<![\d/.])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d/%])/g,m=>[+m[1]-1,+m[2],m[3]?(m[3].length===2?2000+ +m[3]:+m[3]):0]]
+  [/(^|[^\d/.])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d/%])/g,m=>[+m[2]-1,+m[3],m[4]?(m[4].length===2?2000+ +m[4]:+m[4]):0,m[1].length],true]
 ];
 const WEEKDAY=/\b(mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?\b\.?,?/gi;
 const TIME_RE=/\b(?:at\s+|by\s+|@\s*)?(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)|\b(?:at\s+|by\s+)?(noon|midnight)\b/i;
 const SKIP_RE=/\b(no class(es)?|holiday|spring break|fall break|thanksgiving|reading day|office hours|last day to (add|drop|withdraw)|withdraw(al)? deadline|add\/drop|grades? (are )?due|instructor)\b/i;
 function findDates(line){
   const out=[];
-  for(const [re,f] of DATE_PATS){ re.lastIndex=0; let m; while((m=re.exec(line))){ const [mo,d,y]=f(m); if(mo>=0&&mo<12&&d>=1&&d<=31&&!out.some(o=>m.index<o.end&&o.start<m.index+m[0].length)) out.push({mo,d,y,start:m.index,end:m.index+m[0].length,str:m[0]}); } }
+  for(const [re,f] of DATE_PATS){ re.lastIndex=0; let m; while((m=re.exec(line))){ const [mo,d,y,pre=0]=f(m), st=m.index+pre, en=m.index+m[0].length;
+    if(mo>=0&&mo<12&&d>=1&&d<=31&&!out.some(o=>st<o.end&&o.start<en)) out.push({mo,d,y,start:st,end:en,str:m[0].slice(pre)});
+    if(en===m.index) re.lastIndex++; else if(pre) re.lastIndex=en; } }
   return out.sort((a,b)=>a.start-b.start);
 }
 function itemType(s){
@@ -1557,7 +1572,7 @@ function itemType(s){
 }
 function cleanItem(seg){
   let t=seg;
-  for(const [re] of DATE_PATS){ re.lastIndex=0; t=t.replace(re," "); }
+  for(const [re,,keep] of DATE_PATS){ re.lastIndex=0; t=t.replace(re,(x,p1)=>keep?p1+" ":" "); }
   t=t.replace(WEEKDAY," ").replace(new RegExp(TIME_RE.source,"gi")," ").replace(/\bweek\s*\d{1,2}\b/gi," ").replace(/\(\s*\d+(\.\d+)?\s*%\s*\)|\b\d+(\.\d+)?\s*%/g," ")
    .replace(/\b(is |are )?(due|deadline)( on| by| date| at)?\b:?/gi," ").replace(/\s*\|\s*/g," · ").replace(/\s+/g," ").replace(/\s*([,·])(?:\s*[,·])+/g,"$1").replace(/\(\s*\)|\s+([,.)])/g,"$1")
    .replace(/^[\s·\-–—:,.;*•▪●#>|]+|[\s·\-–—:,;*•▪●|]+$/g,"").trim();
@@ -1859,12 +1874,13 @@ async function pickView(){
   };
 }
 function addCourseView(){
+  if(!termList().length){ const s0=seasonOf(Date.now()); ensureTerm(s0.season,s0.year); }
   main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div><section class="card"><h2>Add a class</h2>
     <form class="form" id="aForm"><label>Class name<input class="in" id="aName" placeholder="e.g. BIO 110 · Cell Biology" required></label>
     <label>Semester<select class="in" id="aTerm">${termList().map(t=>`<option value="${t.id}" ${t.id===curTerm()?"selected":""}>${esc(t.name)}</option>`).join("")}<option value="__new">+ New semester…</option></select></label>
     <label>Weeks or topics <small>Optional. One per line. Files and notes get filed under these.</small><textarea class="in" id="aSecs" rows="4" placeholder="Week 1&#10;Week 2&#10;Midterm review"></textarea></label>
     <div class="btnrow"><button class="btn primary">Add class</button><a class="btn" href="#/">Cancel</a></div></form></section>`;
-  $("aName").focus(); if(!termList().length) $("aTerm").value="__new";
+  $("aName").focus();
   $("aTerm").onchange=e=>{ if(e.target.value==="__new"){ const t=askNewTerm(); if(t){ e.target.insertAdjacentHTML("afterbegin",`<option value="${t}">${esc(ST.terms[t].name)}</option>`); e.target.value=t; } else e.target.value=curTerm(); } };
   $("aForm").onsubmit=e=>{ e.preventDefault(); const name=$("aName").value.trim(); if(!name) return;
     const id="c"+uid(), n=Object.keys(ST.courses).length;
@@ -2031,6 +2047,7 @@ addEventListener("scroll",()=>$("topbar").classList.toggle("scrolled",scrollY>4)
   catch(e){ toast("This browser won't let the app store data, so notes will be lost when you close it."); }
   ST=Object.assign(blank(),ST||{}); ST.settings=Object.assign(blank().settings,ST.settings||{}); migrateTerms();
   try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+  window.__rnBooted=true;
   route(); syncLine(); syncStatus();
   if(ST.sync&&ST.sync.gistId) syncNow();
   setTimeout(checkUpdate,4000); setInterval(checkUpdate,30*60e3);
