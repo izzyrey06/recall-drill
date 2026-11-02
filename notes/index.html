@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
 <title>Recall Notes</title>
-<meta name="app-version" content="2026.11.02-7">
+<meta name="app-version" content="2026.11.02-8">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;650;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 :root{
@@ -373,12 +373,30 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
 .cmd code{font-family:var(--mono);font-size:.78rem;overflow-x:auto;white-space:nowrap;flex:1;min-width:0}
 .statusline.upd{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--accent-soft)}
 .upd-ic{color:var(--accent);font-size:1rem}
+
+/* ---------- Semesters ---------- */
+.term-box{display:block;padding:0 4px 10px}
+.term-sel{width:100%;font:inherit;font-weight:600;font-size:.88rem;padding:8px 30px 8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.term-sel:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.term-link{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.term-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.term-card{display:grid;gap:10px;align-content:start;padding:18px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s,border-color .15s}
+.term-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.term-card.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--shadow)}
+.term-card.all{border-style:dashed;box-shadow:none}
+.term-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.term-top b{font-family:var(--display);font-weight:700;font-size:1.2rem;letter-spacing:-.02em}
+.term-card small{color:var(--muted);font-size:.82rem}
+.term-dots{display:flex;gap:5px;min-height:10px}
+.term-dots i{width:22px;height:8px;border-radius:99px;background:var(--c)}
 </style>
 </head><body><div class="app">
   <aside class="side" id="side" aria-label="Navigation">
     <a class="brand" href="#/"><img src="icon-192.png" alt="" width="30" height="30"><span>Recall Notes</span></a>
+    <label class="term-box"><span class="vh">Semester</span><select id="termSel" class="term-sel"></select></label>
     <a class="nav-a" id="navHome" href="#/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4.5v-6h-5v6H5a1 1 0 01-1-1z"/></svg><span class="nm">Home</span></a>
     <a class="nav-a" id="navCal" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><span class="nm">Calendar</span></a>
+    <a class="nav-a" id="navLib" href="#/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 015.5 4H9v16H5.5A1.5 1.5 0 014 18.5zM9 4h4v16H9zM14.5 5.2l3.4-.9 2.6 15.2-3.4.9z"/></svg><span class="nm">Library</span></a>
     <a class="nav-a" id="navSearch" href="#/search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span class="nm">Search</span></a>
     <div class="side-h"><span>Classes</span><a href="#/add" title="Add a class" aria-label="Add a class">+</a></div>
     <nav id="sideCourses" style="display:grid;gap:2px" aria-label="Classes"></nav>
@@ -456,7 +474,7 @@ const DB=(()=>{
   };
 })();
 let ST, TEXT={};
-function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},events:{},outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
+function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},events:{},terms:{},currentTerm:null,outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
 let saveT;
 function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); scheduleSync(); }
 function flush(){ clearTimeout(saveT); saveT=null; if(!ST) return Promise.resolve(); return DB.put("kv","state",ST).catch(e=>toast("Couldn't save on this device: "+(e.message||e))); }
@@ -487,7 +505,8 @@ function syncCollect(){
   for(const n of Object.values(ST.notes)) out["n:"+n.id]=n;
   for(const a of Object.values(ST.assignments)){ if(!a.moodleId) out["a:"+a.id]=a; else if(a.done) out["f:"+a.id]={done:true}; }
   for(const e of Object.values(ST.events)) if(e.mine) out["e:"+e.id]=e;
-  for(const c of Object.values(ST.courses)){ if(!c.moodleId) out["c:"+c.id]=c; else out["k:"+c.id]=c.renamed?{color:c.color,name:c.name}:{color:c.color}; }
+  for(const c of Object.values(ST.courses)){ if(!c.moodleId) out["c:"+c.id]=c; else out["k:"+c.id]={color:c.color,...(c.renamed?{name:c.name}:{}),...(c.termSet?{termId:c.termId}:{})}; }
+  for(const t of Object.values(ST.terms)) out["t:"+t.id]=t;
   for(const [m,n] of Object.entries(ST.outlined)) out["o:"+m]=n;
   for(const [k,v] of Object.entries(ST.syncPending||{})) if(!(k in out)) out[k]=v;
   return out;
@@ -512,14 +531,15 @@ function putKey(k,d){
   else if(t==="c") replaceIn(ST.courses,id,d);
   else if(t==="o") ST.outlined[id]=d;
   else if(t==="f"){ if(!ST.assignments[id]) return false; ST.assignments[id].done=true; }
-  else if(t==="k"){ const c=ST.courses[id]; if(!c) return false; c.color=d.color||c.color; if(d.name){ c.name=d.name; c.renamed=true; } }
+  else if(t==="k"){ const c=ST.courses[id]; if(!c) return false; c.color=d.color||c.color; if(d.name){ c.name=d.name; c.renamed=true; } if(d.termId){ c.termId=d.termId; c.termSet=true; } }
+  else if(t==="t") replaceIn(ST.terms,id,d);
   return true;
 }
 function removeKey(k){
   const i=k.indexOf(":"), t=k.slice(0,i), id=k.slice(i+1);
   if(t==="n") delete ST.notes[id]; else if(t==="a") delete ST.assignments[id]; else if(t==="e") delete ST.events[id];
   else if(t==="c"){ delete ST.courses[id]; for(const n of Object.values(ST.notes)) if(n.courseId===id){ n.courseId=null; n.sectionId=null; } }
-  else if(t==="o") delete ST.outlined[id]; else if(t==="f"&&ST.assignments[id]) ST.assignments[id].done=false;
+  else if(t==="o") delete ST.outlined[id]; else if(t==="t") delete ST.terms[id]; else if(t==="f"&&ST.assignments[id]) ST.assignments[id].done=false;
 }
 function applySync(m,local){
   let changed=false; syncApplying=true;
@@ -708,7 +728,7 @@ async function listMoodleCourses(){
   catch(e){ if(e.code==="invalidtoken"||!current.size) throw e; all=null; }
   const now=Date.now()/1000;
   return (all||[...current].map(id=>({id}))).map(c=>({id:c.id,name:c.fullname||c.displayname||c.shortname||("Course "+c.id),short:c.shortname||"",
-    current:current.size?current.has(c.id):(!c.enddate||c.enddate>now)&&c.visible!==0,ended:c.enddate&&c.enddate<now}));
+    startdate:c.startdate||0,enddate:c.enddate||0,current:current.size?current.has(c.id):(!c.enddate||c.enddate>now)&&c.visible!==0,ended:c.enddate&&c.enddate<now}));
 }
 
 /* ============ Sorting files into kinds ============ */
@@ -749,6 +769,8 @@ function sideNav(){
   $("navHome").setAttribute("aria-current",VIEW.name==="home"?"page":"false");
   $("navSearch").setAttribute("aria-current",VIEW.name==="search"?"page":"false");
   $("navCal").setAttribute("aria-current",VIEW.name==="cal"?"page":"false");
+  $("navLib").setAttribute("aria-current",VIEW.name==="library"?"page":"false");
+  termPicker();
   $("navMoodle").setAttribute("aria-current",VIEW.name==="connect"||VIEW.name==="pick"?"page":"false");
   const cs=courses();
   $("sideCourses").innerHTML=cs.length?cs.map(c=>{ const n=Object.values(ST.assignments).filter(a=>a.courseId===c.id&&!a.done&&!a.submitted&&a.due&&a.due<now+7*DAY).length;
@@ -758,7 +780,7 @@ function sideNav(){
 async function syncAll(only){
   if(SYNC.on||!ST.moodle) return;
   Object.assign(SYNC,{on:true,label:"Checking your Moodle classes",done:0,total:0,err:null,msg:null}); syncLine();
-  const courses=Object.values(ST.courses).filter(c=>c.moodleId&&!c.archived&&(!only||only.includes(c.id)));
+  const courses=Object.values(ST.courses).filter(c=>c.moodleId&&!c.archived&&(only?only.includes(c.id):!(c.enddate&&c.enddate*1000<Date.now()-30*DAY)));
   const before=Object.keys(ST.materials).length, beforeA=Object.keys(ST.assignments).length;
   try{
     for(const c of courses){ SYNC.label="Reading "+c.name; syncLine(); await syncCourse(c); save(); render(); }
@@ -1103,12 +1125,53 @@ function render(nav){
   else if(v==="cal") calView();
   else if(v==="scan") scanView();
   else if(v==="all") allView();
+  else if(v==="library") libraryView();
   else homeView();
   if(nav) scrollTo(0,0); else scrollTo(0,y);
 }
 const courseName=id=>ST.courses[id]?.name||"No class";
 const courseColor=id=>ST.courses[id]?.color||"var(--line)";
-function courses(){ return Object.values(ST.courses).filter(c=>!c.archived).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)); }
+/* ---------- Semesters ---------- */
+const SEASON_START={winter:[0,2],spring:[0,10],summer:[5,1],fall:[7,20],autumn:[7,20]};
+function seasonOf(t){ const d=new Date(t), m=d.getMonth(); return {season:m<=4?"Spring":m<=6?"Summer":"Fall",year:d.getFullYear()}; }
+function termFromText(s){
+  const m=/\b(fall|autumn|spring|summer|winter)\s*(?:semester|term|session|quarter)?\s*'?(20\d{2}|\d{2})\b/i.exec(s||"")||/\b(20\d{2})\s*(fall|autumn|spring|summer|winter)\b/i.exec(s||"");
+  if(!m) return null;
+  const [season,yr]=/^\d/.test(m[1])?[m[2],m[1]]:[m[1],m[2]], y=yr.length===2?2000+ +yr:+yr;
+  return {season:season[0].toUpperCase()+season.slice(1).toLowerCase(),year:y};
+}
+function ensureTerm(season,year){
+  const id=(season+"-"+year).toLowerCase();
+  if(!ST.terms[id]){ const [mo,d]=SEASON_START[season.toLowerCase()]||[0,1]; ST.terms[id]={id,name:season+" "+year,start:new Date(year,mo,d).getTime()}; }
+  return id;
+}
+function termForCourse(c){
+  const t=termFromText(c.name+" "+(c.short||""))||(c.startdate?seasonOf(c.startdate*1000):null)||seasonOf(Date.now());
+  return ensureTerm(t.season,t.year);
+}
+const termList=()=>Object.values(ST.terms).sort((a,b)=>(b.start||0)-(a.start||0)||a.name.localeCompare(b.name));
+function curTerm(){
+  if(ST.currentTerm==="all") return "all";
+  if(ST.currentTerm&&ST.terms[ST.currentTerm]) return ST.currentTerm;
+  const now=seasonOf(Date.now()), id=(now.season+"-"+now.year).toLowerCase(), has=tid=>Object.values(ST.courses).some(c=>!c.archived&&c.termId===tid);
+  if(ST.terms[id]&&has(id)) return id;
+  const latest=termList().find(t=>has(t.id)); return latest?latest.id:"all";
+}
+const termName=id=>id==="all"?"All semesters":ST.terms[id]?.name||"No semester";
+function migrateTerms(){ for(const c of Object.values(ST.courses)) if(!c.termId||!ST.terms[c.termId]) c.termId=termForCourse(c); }
+// Is this class part of what's on screen right now (the chosen semester)?
+const inView=cid=>{ const c=ST.courses[cid]; if(!c||c.archived) return false; const t=curTerm(); return t==="all"||c.termId===t; };
+function courses(all){ return Object.values(ST.courses).filter(c=>!c.archived&&(all||inView(c.id))).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)); }
+function courseOptions(sel){ // every class, grouped by semester
+  const by=groupBy(courses(true),c=>c.termId);
+  return by.sort((a,b)=>(ST.terms[b[0]]?.start||0)-(ST.terms[a[0]]?.start||0)).map(([tid,cs])=>`<optgroup label="${esc(termName(tid))}">${cs.map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
+}
+function termPicker(){
+  const el=$("termSel"); if(!el||!ST) return;
+  const cur=curTerm();
+  el.innerHTML=termList().map(t=>`<option value="${t.id}" ${t.id===cur?"selected":""}>${esc(t.name)}</option>`).join("")+`<option value="all" ${cur==="all"?"selected":""}>All semesters</option><option disabled>──────────</option><option value="__lib">Open library…</option>`;
+}
+function setTerm(id){ ST.currentTerm=id; save(); termPicker(); render(true); }
 function assignRow(a,showCourse){
   const now=Date.now(), late=a.due&&a.due<now&&!a.submitted&&!a.done, soon=a.due&&a.due>now&&a.due-now<3*DAY, fin=a.done||a.submitted;
   const n=Object.values(ST.notes).find(x=>x.assignId===a.id);
@@ -1150,12 +1213,12 @@ function noteCard(n){
 function dayLabel(t){ const d=Math.round((dayStart(t)-dayStart(Date.now()))/DAY); if(d<0) return ["Overdue","late"]; if(d===0) return ["Today","today"]; if(d===1) return ["Tomorrow",""]; return [new Date(t).toLocaleDateString([], d<7?{weekday:"long"}:{weekday:"short",month:"short",day:"numeric"}),""]; }
 function homeView(){
   const cs=courses(), now=Date.now(), m=ST.moodle;
-  const open=Object.values(ST.assignments).filter(a=>!ST.courses[a.courseId]?.archived&&!a.done&&!a.submitted&&a.due);
+  const open=Object.values(ST.assignments).filter(a=>inView(a.courseId)&&!a.done&&!a.submitted&&a.due);
   const due=open.filter(a=>a.due>now-14*DAY&&a.due<now+21*DAY).sort((a,b)=>a.due-b.due).slice(0,10);
   const week=open.filter(a=>a.due>=now&&a.due<now+7*DAY).length, late=open.filter(a=>a.due<now).length;
-  const recent=Object.values(ST.notes).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
+  const termNotes=Object.values(ST.notes).filter(n=>!n.courseId||inView(n.courseId)||!ST.courses[n.courseId]), recentAll=termNotes.length, recent=termNotes.sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
   const hr=new Date().getHours(), first=(m?.fullname||"").trim().split(/\s+/)[0];
-  const hero=`<section class="hero"><p class="eyebrow">${esc(new Date().toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"}))}</p>
+  const hero=`<section class="hero"><p class="eyebrow">${esc(new Date().toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"}))}${Object.keys(ST.terms).length?` · <a href="#/library" class="term-link">${esc(termName(curTerm()))}</a>`:""}</p>
     <h2>${hr<12?"Good morning":hr<18?"Good afternoon":"Good evening"}${first?", "+esc(first):""}</h2>
     ${cs.length?`<p class="sub">${week?`${week} assignment${week===1?"":"s"} due in the next 7 days.`:"Nothing due in the next 7 days."}${late?` ${late} overdue.`:""}</p>`:""}</section>`;
   if(!cs.length){
@@ -1168,11 +1231,11 @@ function homeView(){
     ${recent.length?`<section class="group"><div class="group-h"><h2>Notes</h2></div><div class="note-grid">${recent.map(noteCard).join("")}</div></section>`:""}`;
     return;
   }
-  const decks=Object.values(ST.materials).filter(x=>x.kind==="slides"&&!ST.courses[x.courseId]?.archived).length;
+  const decks=Object.values(ST.materials).filter(x=>x.kind==="slides"&&inView(x.courseId)).length;
   const days=[]; for(const a of due){ const [l,cls]=dayLabel(a.due); let g=days.find(d=>d.l===l); if(!g) days.push(g={l,cls,items:[]}); g.items.push(a); }
   main.innerHTML=hero+`
     ${m?"":`<div class="statusline" style="margin:0"><span class="grow">Bring in your classes, slides and assignments automatically.</span><a class="btn small primary" href="#/connect">Connect Moodle</a></div>`}
-    <div class="stats"><a class="stat" href="#/all/week"><b>${week}</b><span>Due this week</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat ${late?"bad":""}" href="#/all/overdue"><b>${late}</b><span>Overdue</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/slides"><b>${decks}</b><span>Slide decks</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/notes"><b>${Object.keys(ST.notes).length}</b><span>Notes</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></div>
+    <div class="stats"><a class="stat" href="#/all/week"><b>${week}</b><span>Due this week</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat ${late?"bad":""}" href="#/all/overdue"><b>${late}</b><span>Overdue</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/slides"><b>${decks}</b><span>Slide decks</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/notes"><b>${recentAll}</b><span>Notes</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></div>
     <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""} title="Last synced ${esc(ago(m.lastSync))}">${IC.sync}Sync</button>`:""}<a class="btn small" href="#/scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan a syllabus</a><a class="btn small" href="#/add">+ Add class</a></span></div>
       <div class="grid">${cs.map(courseCard).join("")}</div></section>
     <section class="group"><div class="group-h"><h2>Coming up</h2><a class="btn small" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Calendar</a></div>
@@ -1222,12 +1285,14 @@ function courseView(){
       <span class="btnrow">${c.moodleId&&ST.moodle?`<button class="btn small" data-act="syncOne" data-id="${c.id}" ${SYNC.on?"disabled":""}>${IC.sync}Sync</button>`:""}
       <span class="menu"><button class="btn small" data-act="courseMenu" aria-expanded="false">Class options</button><div class="menu-pop" id="cMenu" hidden>
         <label>Name<input class="in" id="cName" value="${esc(c.name)}"></label>
+        <label>Semester<select class="in" id="cTerm">${termList().map(t=>`<option value="${t.id}" ${t.id===c.termId?"selected":""}>${esc(t.name)}</option>`).join("")}<option value="__new">+ New semester…</option></select></label>
         <label>Color<span class="chips">${COLORS.map(col=>`<button class="chip" data-act="cColor" data-c="${col}" aria-pressed="${col===c.color}" style="width:28px;height:28px;padding:0;background:${col};border-color:${col===c.color?"var(--ink)":col}" aria-label="Color"></button>`).join("")}</span></label>
         ${c.moodleUrl?`<a href="${esc(c.moodleUrl)}" target="_blank" rel="noopener">Open on Moodle</a>`:""}
         <button class="btn small danger" data-act="archive" data-id="${c.id}">Remove class from this device</button></div></span></span></div>
     <nav class="tabs" aria-label="Class sections"><a href="#/c/${c.id}/materials" ${tab==="materials"?'aria-current="page"':""}>Slides & files <span>${mats.length}</span></a><a href="#/c/${c.id}/notes" ${tab==="notes"?'aria-current="page"':""}>Notes <span>${notes.length}</span></a><a href="#/c/${c.id}/assignments" ${tab==="assignments"?'aria-current="page"':""}>Assignments <span>${asg.filter(a=>!a.done&&!a.submitted).length}</span></a></nav>
     ${body}`;
   if(tab==="materials") wireDrop(c);
+  const ct=$("cTerm"); if(ct) ct.onchange=()=>{ let t=ct.value; if(t==="__new"){ t=askNewTerm(); if(!t){ ct.value=c.termId; return; } } c.termId=t; c.termSet=true; save(); toast(`Moved to ${termName(t)}`); if(!inView(c.id)) setTerm(t); else render(); };
   const cn=$("cName"); if(cn) cn.onchange=()=>{ c.name=cn.value.trim()||c.name; c.renamed=true; save(); render(); };
 }
 const secOf=(secs,id)=>id&&secs.some(x=>x.id===id)?id:"upl";
@@ -1254,7 +1319,7 @@ function noteView(){
     <div class="note-head" style="min-width:0">
       <input class="title-in" id="nTitle" value="${esc(n.title)}" placeholder="Untitled note" aria-label="Note title">
       <div class="note-meta">
-        <select id="nCourse" aria-label="Class"><option value="">No class</option>${courses().map(x=>`<option value="${x.id}" ${x.id===n.courseId?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
+        <select id="nCourse" aria-label="Class"><option value="">No class</option>${courseOptions(n.courseId)}</select>
         ${c?`<select id="nSec" aria-label="Week or topic">${secOpts}</select>`:""}
         <span class="saved" id="nSaved">Saved</span><span style="flex:1"></span>
         <button class="btn small" data-act="toCards" title="Opens these terms in Recall Drill">Make flashcards</button>
@@ -1390,9 +1455,9 @@ const fromKey=k=>{ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1
 const EV_LABEL={quiz:"Quiz",exam:"Exam",course:"Class event",user:"Personal",site:"School event",forum:"Forum",lesson:"Lesson",workshop:"Workshop",mine:"Your event"};
 function calItems(){
   const out=[];
-  for(const a of Object.values(ST.assignments)) if(a.due&&!ST.courses[a.courseId]?.archived)
+  for(const a of Object.values(ST.assignments)) if(a.due&&inView(a.courseId))
     out.push({t:a.due,title:a.name,courseId:a.courseId,kind:"assign",id:a.id,done:!!(a.done||a.submitted),allDay:!!a.allDay,a});
-  for(const e of Object.values(ST.events)) if(!e.courseId||!ST.courses[e.courseId]?.archived)
+  for(const e of Object.values(ST.events)) if(!e.courseId||inView(e.courseId))
     out.push({t:e.start,title:e.title,courseId:e.courseId,kind:"event",id:e.id,e,allDay:!!e.allDay});
   return out.sort((x,y)=>(x.allDay?0:1)-(y.allDay?0:1)||x.t-y.t);
 }
@@ -1433,7 +1498,7 @@ function calView(){
             <form class="form" id="evForm" style="margin-top:12px">
               <label>What<input class="in" id="evTitle" placeholder="e.g. Study group, Midterm" required maxlength="120"></label>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Date<input class="in" type="date" id="evDate" value="${sel}" required></label><label>Time <small>optional</small><input class="in" type="time" id="evTime"></label></div>
-              <label>Class<select class="in" id="evCourse"><option value="">No class</option>${courses().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>
+              <label>Class<select class="in" id="evCourse"><option value="">No class</option>${courseOptions(VIEW.q.get("c")||"")}</select></label>
               <div class="btnrow"><button class="btn primary small">Add</button></div></form></details></section>
         <section class="card" style="gap:10px"><h3>Next up</h3>${upcoming.length?`<div class="up">${upcoming.map(it=>`<a href="#/cal?m=${dkey(new Date(it.t)).slice(0,7)}&d=${dkey(new Date(it.t))}" class="up-row" style="--c:${courseColor(it.courseId)}"><span class="up-date"><b>${new Date(it.t).getDate()}</b><small>${esc(new Date(it.t).toLocaleDateString([], {month:"short"}))}</small></span><span class="up-txt"><b>${esc(it.title)}</b><small>${esc(it.courseId?courseName(it.courseId):"")}${it.allDay?"":" · "+esc(new Date(it.t).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}))}</small></span></a>`).join("")}</div>`:`<p class="hint">Nothing coming up.</p>`}</section>
       </aside></div>`;
@@ -1553,7 +1618,7 @@ async function scanView(){
   const st=SCAN[cid]||(SCAN[cid]={items:null,source:"",termStart:""});
   if(mid&&st.mid!==mid&&ST.materials[mid]){ st.mid=mid; st.source=ST.materials[mid].name; st.text=await scanText(ST.materials[mid]); st.items=scanSyllabus(st.text,{termStart:st.termStart}); markDupes(st,cid); if(VIEW.name!=="scan") return; }
   const mats=c?Object.values(ST.materials).filter(m=>m.courseId===c.id&&m.type!=="link"&&(TEXT[m.id]||m.status==="saved")).sort((a,b)=>(SYL_RE.test(b.name)-SYL_RE.test(a.name))||a.name.localeCompare(b.name)):[];
-  const opts=courses().map(x=>`<option value="${x.id}" ${x.id===cid?"selected":""}>${esc(x.name)}</option>`).join("");
+  const opts=courseOptions(cid);
   const its=st.items;
   main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span>${c?`<a href="#/c/${c.id}/assignments">${esc(c.name)}</a><span>›</span>`:""}</div>
   <div class="sec-top"><div><p class="eyebrow">Syllabus scanner</p><h2>${its?`Found ${its.length} item${its.length===1?"":"s"}${st.source?` in ${esc(trimTo(st.source,50))}`:""}`:"Import due dates from a syllabus"}</h2></div></div>
@@ -1629,13 +1694,13 @@ function scanAction(a){
 /* ---------- Lists behind the home page numbers ---------- */
 function allView(){
   const kind=["week","overdue","slides","notes"].includes(VIEW.id)?VIEW.id:"week", now=Date.now(), cf=VIEW.q.get("c")||"", sort=VIEW.q.get("sort")||"";
-  const live=id=>!ST.courses[id]?.archived;
+  const live=inView;
   const open=Object.values(ST.assignments).filter(a=>live(a.courseId)&&!a.done&&!a.submitted&&a.due);
   const sets={
     week:open.filter(a=>a.due>=now&&a.due<now+7*DAY).sort((a,b)=>a.due-b.due),
     overdue:open.filter(a=>a.due<now).sort((a,b)=>a.due-b.due),
     slides:Object.values(ST.materials).filter(m=>m.kind==="slides"&&!m.gone&&live(m.courseId)),
-    notes:Object.values(ST.notes)
+    notes:Object.values(ST.notes).filter(n=>!n.courseId||inView(n.courseId)||!ST.courses[n.courseId])
   };
   const TITLES={week:"Due this week",overdue:"Overdue",slides:"Slide decks",notes:"Notes"};
   const q=o=>{ const p=new URLSearchParams({...(cf?{c:cf}:{}),...(sort?{sort}:{}),...o}); for(const [k,v] of [...p]) if(!v) p.delete(k); const s=p.toString(); return `#/all/${kind}${s?"?"+s:""}`; };
@@ -1676,6 +1741,43 @@ function secNum(m){ const c=ST.courses[m.courseId], s=c&&(c.sections||[]).find(x
 function matRowWithWeek(m,showCourse){
   const c=ST.courses[m.courseId], s=c&&(c.sections||[]).find(x=>x.id===m.sectionId);
   return matRow(m).replace('<small>',`<small>${showCourse?`<span class="cc"><span class="cdot" style="--c:${courseColor(m.courseId)}"></span>${esc(trimTo(courseName(m.courseId),30))}</span>`:""}${s?`<span>${esc(trimTo(s.name,36))}</span>`:""}`);
+}
+
+/* ---------- Library: every semester and its classes ---------- */
+function askNewTerm(){
+  const n=(prompt("Name the semester (for example “Spring 2027”)")||"").trim(); if(!n) return null;
+  const t=termFromText(n); if(t) return ensureTerm(t.season,t.year);
+  const id="t"+uid(); ST.terms[id]={id,name:n.slice(0,40),start:Date.now()}; save(); return id;
+}
+function termStats(tid){
+  const cs=Object.values(ST.courses).filter(c=>!c.archived&&c.termId===tid), ids=new Set(cs.map(c=>c.id));
+  const notes=Object.values(ST.notes).filter(n=>ids.has(n.courseId)).length, decks=Object.values(ST.materials).filter(m=>ids.has(m.courseId)&&m.kind==="slides").length;
+  const asg=Object.values(ST.assignments).filter(a=>ids.has(a.courseId)), done=asg.filter(a=>a.done||a.submitted).length;
+  return {cs,notes,decks,asg:asg.length,done};
+}
+function libraryView(){
+  const tid=VIEW.id&&ST.terms[VIEW.id]?VIEW.id:null, cur=curTerm();
+  if(tid){
+    const t=ST.terms[tid], st=termStats(tid);
+    main.innerHTML=`<div class="crumb"><a href="#/library">Library</a><span>›</span></div>
+      <div class="sec-top"><div><p class="eyebrow">Semester</p><h2>${esc(t.name)} ${tid===cur?'<span class="tag acc" style="vertical-align:middle">Current</span>':""}</h2></div>
+        <span class="btnrow">${tid!==cur?`<button class="btn primary small" data-act="useTerm" data-id="${tid}">Switch to this semester</button>`:""}<button class="btn small" data-act="renameTerm" data-id="${tid}">Rename</button>${st.cs.length?"":`<button class="btn small danger" data-act="delTerm" data-id="${tid}">Delete</button>`}</span></div>
+      <div class="stats"><div class="stat"><b>${st.cs.length}</b><span>Classes</span></div><div class="stat"><b>${st.decks}</b><span>Slide decks</span></div><div class="stat"><b>${st.notes}</b><span>Notes</span></div><div class="stat"><b>${st.done}/${st.asg}</b><span>Assignments done</span></div></div>
+      ${st.cs.length?`<div class="grid">${st.cs.sort((a,b)=>a.name.localeCompare(b.name)).map(courseCard).join("")}</div>`:`<p class="empty">No classes in this semester yet. Move one here from its <b>Class options</b>, or add a new class.</p>`}
+      <div class="btnrow"><a class="btn small" href="#/add">+ Add a class</a></div>`;
+    return;
+  }
+  const ts=termList();
+  main.innerHTML=`<div class="sec-top"><div><p class="eyebrow">Library</p><h2>Your semesters</h2></div>
+      <span class="btnrow">${ST.moodle?`<a class="btn small" href="#/pick">Import past classes from Moodle</a>`:""}<button class="btn small primary" data-act="newTerm">+ New semester</button></span></div>
+    <p class="hint">Pick a semester to see just its classes, assignments and calendar. Everything from past semesters stays here and stays searchable.</p>
+    ${ts.length?`<div class="term-grid">${ts.map(t=>{ const st=termStats(t.id); return `<a class="term-card${t.id===cur?" cur":""}" href="#/library/${t.id}">
+        <span class="term-top"><b>${esc(t.name)}</b>${t.id===cur?'<span class="tag acc">Current</span>':""}</span>
+        <span class="term-dots">${st.cs.slice(0,8).map(c=>`<i style="--c:${c.color}" title="${esc(c.name)}"></i>`).join("")}</span>
+        <small>${st.cs.length} class${st.cs.length===1?"":"es"} · ${st.decks} slide deck${st.decks===1?"":"s"} · ${st.notes} note${st.notes===1?"":"s"}</small>
+        ${st.asg?`<span class="progress" title="${st.done} of ${st.asg} assignments done"><i style="width:${Math.round(st.done/st.asg*100)}%"></i></span>`:""}</a>`; }).join("")}
+      <a class="term-card all${cur==="all"?" cur":""}" href="#/" data-act="useTerm" data-id="all"><span class="term-top"><b>All semesters</b>${cur==="all"?'<span class="tag acc">Current</span>':""}</span><small>See every class at once</small></a></div>`
+      :`<p class="empty">No semesters yet. They're created when you add or import classes.</p>`}`;
 }
 
 /* ---------- Connect ---------- */
@@ -1737,8 +1839,8 @@ async function pickView(){
   const have=Object.fromEntries(Object.values(ST.courses).filter(c=>c.moodleId).map(c=>[c.moodleId,c]));
   list.sort((a,b)=>(b.current-a.current)||a.name.localeCompare(b.name));
   main.innerHTML=`<section class="card"><h2>Which classes should come in?</h2>
-    <p class="hint">Classes running now are ticked. Each class brings its slides, files, Moodle pages and assignments.</p>
-    ${list.length?`<div class="list">${list.map(c=>{ const on=have[c.id]?!have[c.id].archived:(c.current&&!c.ended); return `<label class="check"><input type="checkbox" value="${c.id}" ${on?"checked":""}><span><b>${esc(c.name)}</b><small>${esc(c.short)}${c.current?" · in progress":c.ended?" · ended":""}</small></span></label>`; }).join("")}</div>`:`<p class="empty">Moodle says you're not enrolled in any classes.</p>`}
+    <p class="hint">Classes running now are ticked. Tick past classes too if you want their slides and files in your library; they go into their own semester.</p>
+    ${list.length?groupBy(list.map(c=>({...c,tn:(termFromText(c.name+" "+c.short)||(c.startdate?seasonOf(c.startdate*1000):null)||(c.ended?{season:"Other",year:""}:seasonOf(Date.now())))})),c=>(c.tn.season+" "+c.tn.year).trim()).sort((a,b)=>(b[1][0].tn.year||0)-(a[1][0].tn.year||0)||["Fall","Summer","Spring","Winter"].indexOf(a[1][0].tn.season)-["Fall","Summer","Spring","Winter"].indexOf(b[1][0].tn.season)).map(([tn,cs])=>`<div class="group"><div class="group-h"><h3>${esc(tn)}<span>${cs.length}</span></h3><button class="link" type="button" data-act="pickAll">Select all</button></div><div class="list">${cs.map(c=>{ const on=have[c.id]?!have[c.id].archived:(c.current&&!c.ended); return `<label class="check"><input type="checkbox" value="${c.id}" ${on?"checked":""}><span><b>${esc(c.name)}</b><small>${esc(c.short)}${c.current?" · in progress":c.ended?" · ended":""}</small></span></label>`; }).join("")}</div></div>`).join(""):`<p class="empty">Moodle says you're not enrolled in any classes.</p>`}
     <div class="btnrow"><button class="btn primary" id="pGo">Import and sync</button><a class="btn" href="#/">Cancel</a></div></section>`;
   $("pGo").onclick=()=>{
     const ids=[...main.querySelectorAll("input[type=checkbox]:checked")].map(x=>+x.value), only=[];
@@ -1747,22 +1849,27 @@ async function pickView(){
       const ex=have[mc.id];
       if(ids.includes(mc.id)){
         const c=ex||(ST.courses["c"+mc.id]={id:"c"+mc.id,moodleId:mc.id,color:COLORS[i++%COLORS.length],sections:[],order:i});
-        Object.assign(c,{name:ex?.renamed?c.name:mc.name,short:mc.short,archived:false,moodleUrl:`${ST.moodle.site}/course/view.php?id=${mc.id}`});
-        const pk=ST.syncPending?.["k:"+c.id]; if(pk){ if(pk.color) c.color=pk.color; if(pk.name){ c.name=pk.name; c.renamed=true; } } only.push(c.id);
+        Object.assign(c,{name:ex?.renamed?c.name:mc.name,short:mc.short,archived:false,startdate:mc.startdate,enddate:mc.enddate,moodleUrl:`${ST.moodle.site}/course/view.php?id=${mc.id}`});
+        if(!c.termId||!c.termSet) c.termId=termForCourse(c);
+        const pk=ST.syncPending?.["k:"+c.id]; if(pk){ if(pk.color) c.color=pk.color; if(pk.name){ c.name=pk.name; c.renamed=true; } if(pk.termId){ c.termId=pk.termId; c.termSet=true; } } only.push(c.id);
       } else if(ex) ex.archived=true;
     }
-    save(); location.hash="#/"; syncAll(only);
+    if(only.length&&!only.some(id=>inView(id))){ const t=ST.courses[only.find(id=>ST.courses[id].current!==false)||only[0]]; ST.currentTerm=null; }
+    save(); termPicker(); location.hash="#/"; syncAll(only);
   };
 }
 function addCourseView(){
   main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div><section class="card"><h2>Add a class</h2>
     <form class="form" id="aForm"><label>Class name<input class="in" id="aName" placeholder="e.g. BIO 110 · Cell Biology" required></label>
+    <label>Semester<select class="in" id="aTerm">${termList().map(t=>`<option value="${t.id}" ${t.id===curTerm()?"selected":""}>${esc(t.name)}</option>`).join("")}<option value="__new">+ New semester…</option></select></label>
     <label>Weeks or topics <small>Optional. One per line. Files and notes get filed under these.</small><textarea class="in" id="aSecs" rows="4" placeholder="Week 1&#10;Week 2&#10;Midterm review"></textarea></label>
     <div class="btnrow"><button class="btn primary">Add class</button><a class="btn" href="#/">Cancel</a></div></form></section>`;
-  $("aName").focus();
+  $("aName").focus(); if(!termList().length) $("aTerm").value="__new";
+  $("aTerm").onchange=e=>{ if(e.target.value==="__new"){ const t=askNewTerm(); if(t){ e.target.insertAdjacentHTML("afterbegin",`<option value="${t}">${esc(ST.terms[t].name)}</option>`); e.target.value=t; } else e.target.value=curTerm(); } };
   $("aForm").onsubmit=e=>{ e.preventDefault(); const name=$("aName").value.trim(); if(!name) return;
     const id="c"+uid(), n=Object.keys(ST.courses).length;
-    ST.courses[id]={id,name,color:COLORS[n%COLORS.length],order:n,sections:$("aSecs").value.split("\n").map(s=>s.trim()).filter(Boolean).map((s,i)=>({id:"s"+uid()+i,num:i,name:s}))};
+    let term=$("aTerm").value; if(term==="__new"||!term){ term=askNewTerm(); if(!term) return; }
+    ST.courses[id]={id,name,termId:term,termSet:true,color:COLORS[n%COLORS.length],order:n,sections:$("aSecs").value.split("\n").map(s=>s.trim()).filter(Boolean).map((s,i)=>({id:"s"+uid()+i,num:i,name:s}))};
     save(); location.hash="#/c/"+id; };
 }
 function searchView(){
@@ -1816,7 +1923,7 @@ function guessSection(c,name){
 function demo(){
   const id="cdemo", now=Date.now(), at=(d,h=23)=>{ const x=new Date(dayStart(now+d*DAY)); x.setHours(h,59); return x.getTime(); };
   const secs=["General","Week 1 · Cells and membranes","Week 2 · DNA and replication","Week 3 · Cell division"].map((n,i)=>({id:"sd"+i,num:i,name:n}));
-  ST.courses[id]={id,name:"BIO 110 · Intro to Cell Biology (sample)",short:"BIO110",color:COLORS[2],order:-1,sections:secs};
+  const now0=seasonOf(Date.now()); ST.courses[id]={id,termId:ensureTerm(now0.season,now0.year),name:"BIO 110 · Intro to Cell Biology (sample)",short:"BIO110",color:COLORS[2],order:-1,sections:secs};
   const decks=[
     ["sd1","Lecture 1 slides: The cell",[["The cell theory",["All living things are made of cells","The cell is the basic unit of life","Cells come from pre-existing cells"],"Mention Schleiden, Schwann and Virchow."],["Prokaryotes vs eukaryotes",["Prokaryote - no nucleus, DNA in a nucleoid","Eukaryote - DNA inside a membrane-bound nucleus","Both have ribosomes and a plasma membrane"],""],["Organelles",["Mitochondria - make ATP by cellular respiration","Ribosome - builds proteins","Golgi apparatus - packages and ships proteins"],""]]],
     ["sd1","Lecture 2 slides: Membranes",[["Fluid mosaic model",["Phospholipid bilayer with embedded proteins","Hydrophobic tails face inward"],""],["Transport",["Diffusion - movement from high to low concentration","Osmosis - diffusion of water across a membrane","Active transport - uses ATP to move against a gradient"],"Quiz question likely here."]]],
@@ -1852,6 +1959,11 @@ document.addEventListener("click",async e=>{
   const a=t.dataset.act, id=t.dataset.id;
   if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
   if(a==="sync") syncAll();
+  else if(a==="useTerm"){ e.preventDefault(); setTerm(id); location.hash="#/"; toast(`Showing ${termName(id)}`); }
+  else if(a==="newTerm"){ const t=askNewTerm(); if(t){ save(); location.hash="#/library/"+t; } }
+  else if(a==="renameTerm"){ const tm=ST.terms[id], n=(prompt("Semester name",tm.name)||"").trim(); if(n){ tm.name=n.slice(0,40); save(); render(true); termPicker(); } }
+  else if(a==="delTerm"){ if(!confirm(`Delete “${ST.terms[id].name}”?`)) return; delete ST.terms[id]; if(ST.currentTerm===id) ST.currentTerm=null; save(); location.hash="#/library"; }
+  else if(a==="pickAll"){ t.closest(".group").querySelectorAll("input[type=checkbox]").forEach(x=>x.checked=true); }
   else if(a==="doUpdate") doUpdate(t);
   else if(a==="laterUpdate"){ UPD.dismissed=UPD.newer; updBar(); }
   else if(a==="checkUpdate"){ t.disabled=true; t.textContent="Checking…"; const r=await checkUpdate(true); if(r==="latest") toast("You're on the latest version."); else if(r==="offline") toast("Couldn't check. Are you online?"); if(VIEW.name==="connect") render(true); }
@@ -1901,6 +2013,7 @@ let qT; $("q").oninput=e=>{ clearTimeout(qT); qT=setTimeout(()=>{ const v=e.targ
 $("q").onkeydown=e=>{ if(e.key==="Escape"){ e.target.value=""; location.hash="#/"; } };
 
 /* ---------- Shell: drawer, shortcuts, sticky bar ---------- */
+$("termSel").onchange=e=>{ const v=e.target.value; if(v==="__lib"){ termPicker(); location.hash="#/library"; document.body.classList.remove("nav-open"); return; } setTerm(v); if(VIEW.name!=="home"&&VIEW.name!=="cal"&&VIEW.name!=="all"&&VIEW.name!=="library") location.hash="#/"; document.body.classList.remove("nav-open"); };
 $("menuBtn").onclick=()=>document.body.classList.toggle("nav-open");
 $("scrim").onclick=()=>document.body.classList.remove("nav-open");
 $("side").addEventListener("click",e=>{ if(e.target.closest("a")) document.body.classList.remove("nav-open"); });
@@ -1916,7 +2029,7 @@ addEventListener("scroll",()=>$("topbar").classList.toggle("scrolled",scrollY>4)
 (async function boot(){
   try{ ST=await DB.get("kv","state"); TEXT=await DB.all("text"); }
   catch(e){ toast("This browser won't let the app store data, so notes will be lost when you close it."); }
-  ST=Object.assign(blank(),ST||{}); ST.settings=Object.assign(blank().settings,ST.settings||{});
+  ST=Object.assign(blank(),ST||{}); ST.settings=Object.assign(blank().settings,ST.settings||{}); migrateTerms();
   try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
   route(); syncLine(); syncStatus();
   if(ST.sync&&ST.sync.gistId) syncNow();
