@@ -1,5 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
 <title>Recall Notes</title>
+<meta name="app-version" content="2026.11.02-7">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;650;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 :root{
@@ -370,6 +371,8 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
 .sy-state{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;font-weight:600;font-size:.9rem}
 .cmd{display:flex;gap:8px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 12px;min-width:0}
 .cmd code{font-family:var(--mono);font-size:.78rem;overflow-x:auto;white-space:nowrap;flex:1;min-width:0}
+.statusline.upd{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--accent-soft)}
+.upd-ic{color:var(--accent);font-size:1rem}
 </style>
 </head><body><div class="app">
   <aside class="side" id="side" aria-label="Navigation">
@@ -393,6 +396,7 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
       <a class="btn" id="moodleBtn" href="#/connect"><span class="dot" id="mDot"></span><span id="mLbl">Connect Moodle</span></a>
     </header>
     <div class="page-wrap">
+      <div class="statusline upd" id="updBar" role="status" hidden></div>
       <div class="statusline" id="syncLine" hidden></div>
       <main id="main"></main>
     </div>
@@ -608,6 +612,47 @@ function macCard(){
   return `<section class="card"><h3>Install on this Mac</h3><p class="muted" style="margin:0">Paste this into Terminal to add Recall Notes to your Applications folder with its own icon:</p>
     <div class="cmd"><code>${esc(MAC_CMD)}</code><button class="btn small" data-act="copyCmd">Copy</button></div>
     <p class="hint">Or in Safari choose <b>File → Add to Dock</b>; in Chrome, click the install icon in the address bar.</p></section>`;
+}
+
+/* ============ Updates: spot a new version on the site and switch to it ============ */
+const APP_VERSION=document.querySelector('meta[name="app-version"]')?.content||"dev";
+const UPD={newer:null,checking:false,at:0};
+const verOf=html=>(/<meta name="app-version" content="([^"]+)"/.exec(html)||[])[1]||null;
+async function checkUpdate(manual){
+  if(UPD.checking||(!manual&&Date.now()-UPD.at<5*60e3)||!navigator.onLine||!location.protocol.startsWith("http")) return manual?"offline":null;
+  UPD.checking=true; UPD.at=Date.now();
+  try{
+    const r=await fetch("./index.html?rn-check="+Date.now(),{cache:"no-store"});
+    const v=r.ok?verOf(await r.text()):null;
+    UPD.newer=v&&v!==APP_VERSION?v:null;
+  }catch(e){ UPD.checking=false; return "offline"; }
+  UPD.checking=false; updBar();
+  return UPD.newer?"newer":"latest";
+}
+function updBar(){
+  const el=$("updBar"); if(!el) return;
+  el.hidden=!UPD.newer||UPD.dismissed===UPD.newer;
+  el.innerHTML=`<span class="upd-ic">✦</span><span class="grow"><b>A new version of Recall Notes is ready.</b> <span class="muted">Your notes stay as they are.</span></span><button class="btn small primary" data-act="doUpdate">Update now</button><button class="link" data-act="laterUpdate">Later</button>`;
+  const c=$("updState"); if(c) c.innerHTML=updStateHtml();
+}
+async function doUpdate(btn){
+  if(btn){ btn.disabled=true; btn.textContent="Updating…"; }
+  await flush();
+  try{
+    const keys=(await caches.keys()).filter(k=>k.startsWith("recall-notes-"));
+    const files=["./","./index.html","./manifest.webmanifest","./sw.js"];
+    for(const k of keys){ const c=await caches.open(k);
+      for(const f of files){ try{ const r=await fetch(f,{cache:"reload"}); if(r.ok&&f!=="./sw.js") await c.put(f,r.clone()); }catch(e){} } }
+    const reg=await navigator.serviceWorker?.getRegistration(); if(reg) await reg.update().catch(()=>{});
+  }catch(e){}
+  location.reload();
+}
+const updStateHtml=()=>UPD.newer?`<span class="dot ok"></span>Version ${esc(UPD.newer)} is ready`:`<span class="dot"></span>You're on version ${esc(APP_VERSION)}`;
+function updCard(){
+  return `<section class="card"><div class="sec-top"><h3>Updates</h3>${UPD.newer?'<span class="tag acc">New version</span>':""}</div>
+    <p class="sy-state" id="updState">${updStateHtml()}</p>
+    <p class="hint">Recall Notes checks for updates when you open it and every half hour. Updating keeps all your notes, files and settings.</p>
+    <div class="btnrow">${UPD.newer?`<button class="btn primary small" data-act="doUpdate">Update now</button>`:`<button class="btn small" data-act="checkUpdate">Check for updates</button>`}</div></section>`;
 }
 
 /* ============ Moodle web service client ============ */
@@ -1660,7 +1705,7 @@ function connectView(){
       <ol class="steps"><li>On the Moodle website, open your profile menu and choose <b>Preferences</b>, then <b>Security keys</b>.</li><li>Copy the key next to <b>Moodle mobile web service</b>. If there isn't one, open the official Moodle app once and sign in, then check again.</li><li>Paste it below along with the Moodle address above.</li></ol>
       <div class="form" style="margin-top:10px"><label>Security key<input class="in" id="cTok" spellcheck="false" autocomplete="off" style="font-family:var(--mono)"></label><div class="btnrow"><button class="btn" id="cTokGo">Connect with key</button></div></div>
       <p class="hint" style="margin-top:10px">Some schools turn off app access entirely. You can still make classes yourself and drop in slides you download from Moodle. They get sorted and outlined the same way.</p>
-    </details></section>`}${syncCard()}${macCard()}`;
+    </details></section>`}${syncCard()}${updCard()}${macCard()}`;
   wireSyncCard();
   if(m){
     $("setDl").onchange=e=>{ s.autoDownload=e.target.checked; save(); if(s.autoDownload&&!SYNC.on) syncAll(); };
@@ -1807,6 +1852,9 @@ document.addEventListener("click",async e=>{
   const a=t.dataset.act, id=t.dataset.id;
   if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
   if(a==="sync") syncAll();
+  else if(a==="doUpdate") doUpdate(t);
+  else if(a==="laterUpdate"){ UPD.dismissed=UPD.newer; updBar(); }
+  else if(a==="checkUpdate"){ t.disabled=true; t.textContent="Checking…"; const r=await checkUpdate(true); if(r==="latest") toast("You're on the latest version."); else if(r==="offline") toast("Couldn't check. Are you online?"); if(VIEW.name==="connect") render(true); }
   else if(a==="syncNotes") syncNow();
   else if(a==="syncOff"){ if(!confirm("Turn off sync on this device? Your notes stay here and in GitHub.")) return; ST.sync=null; save(); setSyncState("none"); render(true); }
   else if(a==="syncDrill") doSyncConnect(drillToken(),t,$("syErr2"));
@@ -1872,6 +1920,8 @@ addEventListener("scroll",()=>$("topbar").classList.toggle("scrolled",scrollY>4)
   try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
   route(); syncLine(); syncStatus();
   if(ST.sync&&ST.sync.gistId) syncNow();
+  setTimeout(checkUpdate,4000); setInterval(checkUpdate,30*60e3);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkUpdate(); });
   addEventListener("online",()=>syncNow());
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncNow(); });
   setInterval(()=>{ if(document.visibilityState==="visible") syncNow(); },60000);
