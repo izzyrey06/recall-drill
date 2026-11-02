@@ -302,7 +302,6 @@ textarea{width:100%;min-height:240px;font-family:var(--mono);font-size:.85rem;pa
       <button class="tab" id="tabTest" role="tab">Test</button>
     </nav>
     <div class="hdr-btns">
-      <a class="btn" href="notes.html" style="text-decoration:none" title="Class notes, slides and assignments from Moodle">Notes</a>
       <button class="btn sync-btn" id="syncBtn" title="Sync"><span class="dot" id="syncDot"></span><span id="syncLbl">Sync</span></button>
       <button class="btn" id="editBtn">Edit set</button>
     </div>
@@ -1807,7 +1806,7 @@ $("tabLearn").onclick=()=>setMode("learn");
 $("tabMatch").onclick=()=>setMode("match");
 $("tabTest").onclick=()=>setMode("test");
 if(R.activeId && R.sets[R.activeId]) openSet(R.activeId); else goLibrary();
-// Terms sent over from Recall Notes ("Make flashcards" on a note)
+// Terms sent over from the Recall Notes app ("Make flashcards" on a note)
 try{ const h=JSON.parse(localStorage.getItem("recall-drill-handoff")||"null");
   if(h){ localStorage.removeItem("recall-drill-handoff");
     if(Date.now()-(h.at||0)<10*60e3&&h.text){ editor(true); $("setName").value=String(h.name||"").slice(0,80); $("src").value=h.text; $("src").dispatchEvent(new Event("input")); } } }catch(e){}

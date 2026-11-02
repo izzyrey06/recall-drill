@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
 <title>Recall Notes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -187,8 +187,7 @@ mark{background:color-mix(in srgb,var(--mark) 45%,transparent);color:inherit;bor
     <div class="hdr-right">
       <input class="search" id="q" type="search" placeholder="Search notes, slides, assignments" aria-label="Search everything" autocomplete="off">
       <a class="btn" id="moodleBtn" href="#/connect"><span class="dot" id="mDot"></span><span id="mLbl">Connect Moodle</span></a>
-      <a class="btn" href="index.html" title="Your flashcard sets">Flashcards</a>
-    </div>
+          </div>
   </header>
   <div class="statusline" id="syncLine" hidden></div>
   <main id="main" class="wrap" style="max-width:none"></main>
@@ -546,7 +545,7 @@ async function docxExtract(buf){
   return {md:md.join("\n\n"),text:md.join("\n").replace(/^(#+|-) /gm,"")};
 }
 function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Couldn't load the PDF reader. Open the app once while online.")); document.head.appendChild(s); }); }
-async function pdfjs(){ if(!window.pdfjsLib){ await loadScript("vendor/pdf.min.js"); } pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js"; return pdfjsLib; }
+async function pdfjs(){ if(!window.pdfjsLib){ await loadScript("../vendor/pdf.min.js"); } pdfjsLib.GlobalWorkerOptions.workerSrc="../vendor/pdf.worker.min.js"; return pdfjsLib; }
 async function pdfExtract(buf){
   const lib=await pdfjs(), pdf=await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise, slides=[];
   for(let p=1;p<=pdf.numPages;p++){
@@ -802,7 +801,7 @@ function noteView(){
         <select id="nCourse" aria-label="Class"><option value="">No class</option>${courses().map(x=>`<option value="${x.id}" ${x.id===n.courseId?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
         ${c?`<select id="nSec" aria-label="Week or topic">${secOpts}</select>`:""}
         <span class="saved" id="nSaved">Saved</span><span style="flex:1"></span>
-        <button class="btn small" data-act="toCards">Make flashcards</button>
+        <button class="btn small" data-act="toCards" title="Opens these terms in Recall Drill">Make flashcards</button>
         <button class="btn small" data-act="exportNote">Download</button>
         <button class="link danger" data-act="delNote">Delete</button>
       </div>
@@ -1088,7 +1087,7 @@ function toFlashcards(n){
     .filter(l=>/\S\s+[-–—=:]\s+\S|\S:\s+\S|\t/.test(l)&&l.length<400);
   if(lines.length<2){ toast("Write at least two “Term - definition” lines first."); return; }
   try{ localStorage.setItem("recall-drill-handoff",JSON.stringify({name:n.title||"Notes",text:lines.join("\n"),at:Date.now()})); }catch(e){ toast("Couldn't hand the terms over."); return; }
-  flush().then(()=>location.href="index.html");
+  flush().then(()=>location.href="../");
 }
 
 /* ---------- Clicks ---------- */

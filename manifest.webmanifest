@@ -24,19 +24,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Notes",
-      "short_name": "Notes",
-      "description": "Class notes, slides and assignments from Moodle",
-      "url": "./notes.html",
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
   ]
 }
