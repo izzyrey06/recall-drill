@@ -1,6 +1,6 @@
 // Recall Drill offline support: serve the app from cache, refresh it in the background.
-const CACHE = "recall-drill-v2";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js"];
+const CACHE = "recall-drill-v3";
+const CORE = ["./", "./index.html", "./notes.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -27,7 +27,8 @@ self.addEventListener("fetch", e => {
   // Cache first, then update the cache in the background (new versions show on next launch)
   e.respondWith(
     caches.open(CACHE).then(async cache => {
-      const key = req.mode === "navigate" ? "./index.html" : req;
+      const page = url.pathname.split("/").pop();
+      const key = req.mode === "navigate" ? (/^[\w-]+\.html$/.test(page) ? "./" + page : "./index.html") : req;
       const cached = await cache.match(key, { ignoreSearch: req.mode === "navigate" });
       const network = fetch(req).then(res => {
         if (res && (res.ok || res.type === "opaque")) cache.put(key, res.clone());

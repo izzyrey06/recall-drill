@@ -1,0 +1,1154 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Recall Notes"><meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)">
+<title>Recall Notes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --ink:#18202e; --muted:#5d6779; --line:#d6dce6;
+  --accent:#2a4fd6; --accent-ink:#ffffff; --mark:#f2b53a;
+  --good:#1d8a5b; --good-bg:#e3f4ec; --bad:#c23b3b; --bad-bg:#fbe7e7; --warn:#a86a00; --warn-bg:#fdf1d8;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111520; --surface:#1a2030; --ink:#e8ecf4; --muted:#9aa4b8; --line:#2c3446;
+  --accent:#7d9bff; --accent-ink:#0d1220; --mark:#f2c25a;
+  --good:#5fd39f; --good-bg:#16302a; --bad:#ff8a8a; --bad-bg:#3a1c22; --warn:#f2c25a; --warn-bg:#352a12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111520; --surface:#1a2030; --ink:#e8ecf4; --muted:#9aa4b8; --line:#2c3446;
+  --accent:#7d9bff; --accent-ink:#0d1220; --mark:#f2c25a;
+  --good:#5fd39f; --good-bg:#16302a; --bad:#ff8a8a; --bad-bg:#3a1c22; --warn:#f2c25a; --warn-bg:#352a12; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:880px;margin:0 auto;display:grid;gap:20px}
+.wrap.wide{max-width:1320px}
+a{color:var(--accent)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;letter-spacing:-.01em}
+h1 a{color:inherit;text-decoration:none;border-radius:6px} h1 a:focus-visible{outline:3px solid var(--mark);outline-offset:3px}
+h1 span{background:linear-gradient(transparent 62%,var(--mark) 62%)}
+h2{font-family:var(--display);font-weight:800;font-size:1.4rem;margin:0;letter-spacing:-.01em}
+h3{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:0}
+.hdr-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 320px;justify-content:flex-end}
+.search{flex:1 1 200px;max-width:340px;min-width:0;font:inherit;padding:9px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:9px 15px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;line-height:1.3}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{padding:6px 11px;font-size:.88rem;border-radius:9px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn svg{width:16px;height:16px;flex:none}
+.link{font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.link.danger{color:var(--bad)}
+:is(.btn,.link,.chip,input,select,textarea,a,summary,.row-open):focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;gap:14px;min-width:0}
+.muted,.hint{color:var(--muted)} .hint{font-size:.9rem;margin:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none;display:inline-block}
+.dot.ok{background:var(--good)} .dot.busy{background:var(--accent);animation:pulse 1s infinite alternate} .dot.err{background:var(--bad)}
+@keyframes pulse{to{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}}
+.statusline{display:flex;gap:10px;align-items:center;font-size:.9rem;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;flex-wrap:wrap}
+.statusline .grow{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.progress{height:5px;border-radius:99px;background:var(--line);overflow:hidden;flex:1 1 100%} .progress i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.sec-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.crumb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.92rem;color:var(--muted)}
+.crumb a{font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{font:inherit;font-weight:600;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none}
+.chip span{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.chip[aria-pressed="true"],.chip[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)} .chip[aria-pressed="true"] span,.chip[aria-selected="true"] span{color:inherit;opacity:.75}
+.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs a{white-space:nowrap}
+.tabs a{padding:9px 14px;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1.5px;display:flex;gap:6px;align-items:center}
+.tabs a span{font-family:var(--mono);font-size:.76rem}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.course{display:grid;gap:6px;padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;position:relative;overflow:hidden;min-width:0}
+.course::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--c,var(--accent))}
+.course:hover{border-color:var(--accent)}
+.course b{font-family:var(--display);font-weight:600;font-size:1.08rem;line-height:1.25;overflow-wrap:anywhere}
+.course small{color:var(--muted);font-size:.85rem;display:flex;gap:10px;flex-wrap:wrap}
+.cdot{width:10px;height:10px;border-radius:3px;background:var(--c,var(--accent));display:inline-block;flex:none}
+.list{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.row:hover{border-color:var(--accent)}
+.row-open{color:var(--ink);text-decoration:none;display:grid;gap:2px;min-width:0;border-radius:6px}
+.row-open b{font-weight:600;overflow-wrap:anywhere}
+.row-open small{color:var(--muted);font-size:.84rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.kind{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--bg);color:var(--muted);flex:none}
+.kind svg{width:19px;height:19px}
+.kind.slides{color:#c2541b} .kind.notes{color:var(--good)} .kind.reading{color:#7a4fd6} .kind.link{color:var(--accent)} .kind.assign{color:var(--bad)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .kind.slides{color:#ff9d6b}:root:not([data-theme="light"]) .kind.reading{color:#b99bff}}
+.tag{font-size:.74rem;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.tag.good{background:var(--good-bg);color:var(--good)} .tag.bad{background:var(--bad-bg);color:var(--bad)} .tag.warn{background:var(--warn-bg);color:var(--warn)} .tag.acc{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.group{display:grid;gap:8px}
+.group-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px}
+.group-h h3 span{font-family:var(--mono);font-size:.78rem;color:var(--muted);font-weight:500;margin-left:6px}
+.group-sum{font-size:.88rem;color:var(--muted);margin:-4px 0 0}
+.empty{text-align:center;color:var(--muted);padding:28px 16px;border:1.5px dashed var(--line);border-radius:14px;display:grid;gap:12px;justify-items:center}
+.empty p{margin:0}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.form{display:grid;gap:12px}
+.form label{font-weight:600;font-size:.92rem;display:grid;gap:5px}
+.form label small{font-weight:400;color:var(--muted)}
+.in{font:inherit;padding:10px 13px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+select.in{padding:8px 10px}
+.err{color:var(--bad);margin:0;font-size:.92rem}
+.ok-text{color:var(--good);margin:0;font-size:.92rem}
+details.more{border-top:1px solid var(--line);padding-top:12px}
+details.more summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.steps{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:.92rem;display:grid;gap:4px}
+.steps b{color:var(--ink)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.check input{accent-color:var(--accent);margin:4px 0 0;flex:none;width:17px;height:17px}
+.check:has(input:checked){border-color:var(--accent)}
+.check b{font-weight:600;display:block;overflow-wrap:anywhere} .check small{color:var(--muted)}
+.switch{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.switch:first-child{border-top:0}
+.switch span{display:grid} .switch small{color:var(--muted);font-size:.85rem}
+.switch input[type=checkbox]{accent-color:var(--accent);width:20px;height:20px;flex:none}
+.switch input[type=number]{width:6em}
+.due{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
+.done-row{opacity:.6}
+.done-row b{text-decoration:line-through}
+.ck{accent-color:var(--good);width:20px;height:20px;margin:0}
+/* Note editor */
+.note-layout{display:grid;gap:16px;align-items:start}
+@media (min-width:1080px){.note-layout.split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.note-layout.split .viewer-pane{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.note-head{display:grid;gap:10px}
+.title-in{font-family:var(--display);font-weight:800;font-size:1.6rem;letter-spacing:-.01em;border:0;background:none;color:var(--ink);padding:4px 0;width:100%;min-width:0;border-bottom:1.5px solid transparent;border-radius:0}
+.title-in:hover{border-bottom-color:var(--line)}
+.title-in:focus-visible{outline:none;border-bottom-color:var(--accent)}
+.note-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.9rem}
+.note-meta select{font:inherit;font-size:.88rem;padding:5px 8px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);max-width:100%}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:6px;border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;background:var(--surface)}
+.toolbar .tb{font:inherit;font-size:.86rem;font-weight:700;min-width:34px;height:32px;padding:0 9px;border-radius:8px;border:0;background:none;color:var(--ink);cursor:pointer}
+.toolbar .tb:hover{background:var(--bg)}
+.toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.toolbar .grow{flex:1}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{font:inherit;font-size:.84rem;font-weight:600;padding:5px 11px;border:0;background:none;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.editor{font:inherit;font-size:1rem;line-height:1.6;width:100%;min-height:55vh;padding:16px 18px;border:1px solid var(--line);border-radius:0 0 14px 14px;background:var(--surface);color:var(--ink);resize:vertical;display:block}
+.editor:focus-visible{outline:none;border-color:var(--accent)}
+.md{padding:16px 18px;border:1px solid var(--line);border-radius:0 0 14px 14px;background:var(--surface);min-height:30vh;overflow-wrap:anywhere}
+.md.solo{border-radius:14px}
+.md>:first-child{margin-top:0} .md>:last-child{margin-bottom:0}
+.md h1,.md h2,.md h3{font-family:var(--display);font-weight:700;line-height:1.25;margin:1.1em 0 .4em}
+.md h1{font-size:1.5rem} .md h2{font-size:1.2rem} .md h3{font-size:1.05rem}
+.md h2[data-slide]{cursor:pointer} .md h2[data-slide]:hover{color:var(--accent)}
+.md p,.md ul,.md ol,.md blockquote{margin:.5em 0}
+.md ul,.md ol{padding-left:1.4em}
+.md li.task{list-style:none;margin-left:-1.3em}
+.md li.task input{accent-color:var(--accent);margin-right:8px;vertical-align:-2px}
+.md blockquote{border-left:3px solid var(--mark);padding:2px 12px;color:var(--muted);background:var(--bg);border-radius:0 8px 8px 0}
+.md code{font-family:var(--mono);font-size:.86em;background:var(--bg);padding:1px 5px;border-radius:5px}
+.md hr{border:0;border-top:1px solid var(--line);margin:1.2em 0}
+.md .matref{display:inline-flex;gap:6px;align-items:center;font-weight:600;font-size:.9rem;padding:2px 10px;border-radius:99px;background:var(--bg);text-decoration:none}
+.saved{font-size:.82rem;color:var(--muted)}
+/* Viewer */
+.viewer{display:grid;gap:12px;min-width:0}
+.viewer-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.pages{display:grid;gap:12px}
+.page{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.18);width:100%;position:relative;overflow:hidden}
+.page canvas{display:block;width:100%;height:auto}
+.page .pn{position:absolute;right:8px;bottom:6px;font-family:var(--mono);font-size:.72rem;color:#5d6779;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:6px}
+.slide{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface);display:grid;gap:6px;scroll-margin-top:12px}
+.slide .sn{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.slide b{font-family:var(--display);font-weight:600;font-size:1.05rem}
+.slide ul{margin:0;padding-left:1.2em}
+.slide .spk{font-size:.9rem;color:var(--muted);border-left:3px solid var(--mark);padding-left:10px;white-space:pre-wrap}
+.html-body{overflow-wrap:anywhere}
+.html-body table{border-collapse:collapse;max-width:100%} .html-body td,.html-body th{border:1px solid var(--line);padding:4px 8px}
+.flash-hi{animation:hi 1.4s}
+@keyframes hi{0%{box-shadow:0 0 0 3px var(--mark)}100%{box-shadow:0 0 0 3px transparent}}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:14px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--surface)}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.snip{font-size:.88rem;color:var(--muted);margin:2px 0 0;overflow-wrap:anywhere}
+mark{background:color-mix(in srgb,var(--mark) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+.menu{position:relative}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px -12px rgba(16,28,70,.35);padding:12px;display:grid;gap:10px;width:min(300px,80vw)}
+.menu-pop label{display:grid;gap:4px;font-size:.85rem;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.92rem;z-index:20;max-width:calc(100vw - 32px);box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+@media (max-width:620px){
+  .row{grid-template-columns:auto minmax(0,1fr)}
+  .row .acts{grid-column:1/-1;justify-content:flex-start}
+  .search{max-width:none;order:3;flex-basis:100%}
+  .title-in{font-size:1.35rem}
+}
+</style>
+</head><body><div class="wrap" id="wrap">
+  <header>
+    <h1><a href="#/" title="Home"><span>Recall</span> Notes</a></h1>
+    <div class="hdr-right">
+      <input class="search" id="q" type="search" placeholder="Search notes, slides, assignments" aria-label="Search everything" autocomplete="off">
+      <a class="btn" id="moodleBtn" href="#/connect"><span class="dot" id="mDot"></span><span id="mLbl">Connect Moodle</span></a>
+      <a class="btn" href="index.html" title="Your flashcard sets">Flashcards</a>
+    </div>
+  </header>
+  <div class="statusline" id="syncLine" hidden></div>
+  <main id="main" class="wrap" style="max-width:none"></main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ============ Basics ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const DAY=864e5;
+const extOf=n=>{ const m=/\.([a-z0-9]{1,5})(?:$|[?#])/i.exec(n||""); return m?m[1].toLowerCase():""; };
+const trimTo=(s,n)=>{ s=String(s||"").replace(/\s+/g," ").trim(); return s.length>n?s.slice(0,n-1).trimEnd()+"…":s; };
+const fmtSize=b=>!b?"":b<1024?b+" B":b<1048576?Math.round(b/1024)+" KB":(b/1048576).toFixed(b<1048576*10?1:0)+" MB";
+function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
+let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
+const dayStart=t=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+function fmtDue(t){
+  if(!t) return "No due date";
+  const d=new Date(t), days=Math.round((dayStart(t)-dayStart(Date.now()))/DAY);
+  const time=d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  if(days===0) return "Today "+time; if(days===1) return "Tomorrow "+time; if(days===-1) return "Yesterday "+time;
+  if(days>1&&days<7) return d.toLocaleDateString([], {weekday:"short"})+" "+time;
+  return d.toLocaleDateString([], {month:"short",day:"numeric",year:d.getFullYear()!==new Date().getFullYear()?"numeric":undefined})+" "+time;
+}
+function ago(t){ if(!t) return "never"; const s=(Date.now()-t)/1000; if(s<60) return "just now"; if(s<3600) return Math.round(s/60)+" min ago"; if(s<86400) return Math.round(s/3600)+" h ago"; return new Date(t).toLocaleDateString([], {month:"short",day:"numeric"}); }
+const COLORS=["#2a4fd6","#c2541b","#1d8a5b","#7a4fd6","#c23b6b","#0f8a9a","#a86a00","#5d6779"];
+
+const IC={
+  slides:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4"/></svg>',
+  notes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7M9 8h3"/></svg>',
+  reading:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5C5 4.5 8.5 4.5 12 6.5c3.5-2 7-2 9-1v13c-2-1-5.5-1-9 1-3.5-2-7-2-9-1z"/><path d="M12 6.5v13"/></svg>',
+  link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>',
+  other:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/></svg>',
+  assign:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 013 3L8 18.5z"/><path d="M13.5 7l3 3"/></svg>',
+  sync:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 00-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0014.3 4.9L20 16M20 20v-4h-4"/></svg>'
+};
+const KINDS={slides:"Slides",notes:"Notes & handouts",reading:"Readings",link:"Links",other:"Other files"};
+const KIND_ORDER=["slides","notes","reading","link","other"];
+
+/* ============ Storage (IndexedDB: state, file blobs, extracted text) ============ */
+const DB=(()=>{
+  let p;
+  const open=()=>p||(p=new Promise((ok,no)=>{ const r=indexedDB.open("recall-notes",1);
+    r.onupgradeneeded=()=>{ const d=r.result; ["kv","files","text"].forEach(s=>d.objectStoreNames.contains(s)||d.createObjectStore(s)); };
+    r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }));
+  const tx=(store,mode,fn)=>open().then(d=>new Promise((ok,no)=>{ const t=d.transaction(store,mode), req=fn(t.objectStore(store)); t.oncomplete=()=>ok(req&&req.result); t.onerror=()=>no(t.error); t.onabort=()=>no(t.error); }));
+  return {
+    get:(s,k)=>tx(s,"readonly",o=>o.get(k)),
+    put:(s,k,v)=>tx(s,"readwrite",o=>o.put(v,k)),
+    del:(s,k)=>tx(s,"readwrite",o=>o.delete(k)),
+    all:s=>open().then(d=>new Promise((ok,no)=>{ const out={}, t=d.transaction(s), c=t.objectStore(s).openCursor();
+      c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } }; t.oncomplete=()=>ok(out); t.onerror=()=>no(t.error); }))
+  };
+})();
+let ST, TEXT={};
+function blank(){ return {v:1,moodle:null,courses:{},materials:{},notes:{},assignments:{},outlined:{},settings:{autoDownload:true,maxMB:40,autoOutline:true,showPast:false}}; }
+let saveT;
+function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); }
+function flush(){ clearTimeout(saveT); saveT=null; if(!ST) return Promise.resolve(); return DB.put("kv","state",ST).catch(e=>toast("Couldn't save on this device: "+(e.message||e))); }
+window.addEventListener("pagehide",flush);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flush(); });
+async function putText(id,t){ TEXT[id]=t; try{ await DB.put("text",id,t); }catch(e){} }
+async function removeMaterial(id){ delete ST.materials[id]; delete TEXT[id]; try{ await DB.del("files",id); await DB.del("text",id); }catch(e){} }
+
+/* ============ Moodle web service client ============ */
+class MoodleError extends Error{ constructor(msg,code){ super(msg); this.code=code; } }
+function normSite(raw){
+  let s=(raw||"").trim(); if(!s) throw new MoodleError("Enter your Moodle address.","input");
+  if(!/^https?:\/\//i.test(s)) s="https://"+s;
+  let u; try{ u=new URL(s); }catch(e){ throw new MoodleError("That doesn't look like a web address.","input"); }
+  let path=u.pathname.replace(/\/(login|my|course|user|admin|mod|webservice|calendar|grade)(\/.*)?$/i,"").replace(/\/(index\.php)?$/i,"").replace(/\/+$/,"");
+  return u.origin+path;
+}
+async function post(url,params){
+  const body=new URLSearchParams(); for(const [k,v] of Object.entries(params)) body.append(k,v);
+  let r;
+  try{ r=await fetch(url,{method:"POST",body,credentials:"omit"}); }
+  catch(e){ throw new MoodleError(navigator.onLine?"Couldn't reach that Moodle site. Check the address. If it's right, your school may block apps from connecting (see “Other ways to connect” below).":"You're offline.","network"); }
+  const txt=await r.text(); let j;
+  try{ j=JSON.parse(txt); }catch(e){ throw new MoodleError(r.status===404?"That address isn't a Moodle site (the app sign-in page wasn't found).":"Moodle sent back something unexpected (HTTP "+r.status+"). Check the address.","notmoodle"); }
+  return j;
+}
+function flat(obj,pre="",out={}){ for(const [k,v] of Object.entries(obj)){ const key=pre?`${pre}[${k}]`:k; if(v!==null&&typeof v==="object") flat(v,key,out); else if(v!==undefined) out[key]=typeof v==="boolean"?(v?1:0):v; } return out; }
+const WS_HINT={
+  invalidtoken:"Your Moodle sign-in has expired or was revoked. Connect again.",
+  accessexception:"Moodle refused access. Your account may not be allowed to use the Moodle app.",
+  webservicesnotenabled:"This Moodle site has the app connection turned off.",
+  servicenotavailable:"This Moodle site has the app connection turned off.",
+  enablewsdescription:"This Moodle site has the app connection turned off. Ask your school's Moodle admin to enable “mobile web services”, or add files yourself.",
+  invalidlogin:"Wrong username or password. If your school signs you in through Microsoft, Google or another single sign-on page, use a security key instead (see below).",
+  sitemaintenance:"This Moodle site is in maintenance mode. Try again later.",
+  usernotconfirmed:"Your Moodle account hasn't been confirmed yet.",
+  passwordisexpired:"Your Moodle password has expired. Change it on the Moodle website first."
+};
+async function wsCall(m,fn,args={}){
+  const j=await post(m.site+"/webservice/rest/server.php?moodlewsrestformat=json",{wstoken:m.token,wsfunction:fn,...flat(args)});
+  if(j&&j.exception) throw new MoodleError(WS_HINT[j.errorcode]||j.message||"Moodle returned an error.",j.errorcode);
+  return j;
+}
+const ws=(fn,args)=>wsCall(ST.moodle,fn,args);
+async function login(site,username,password){
+  const j=await post(site+"/login/token.php",{username,password,service:"moodle_mobile_app"});
+  if(j.error||!j.token) throw new MoodleError(WS_HINT[j.errorcode]||j.error||"Moodle didn't accept that sign-in.",j.errorcode||"login");
+  return j.token;
+}
+async function siteInfo(site,token){
+  const info=await wsCall({site,token},"core_webservice_get_site_info");
+  return {site:(info.siteurl||site).replace(/\/+$/,""),token,userid:info.userid,fullname:info.fullname,sitename:info.sitename,functions:(info.functions||[]).map(f=>f.name)};
+}
+const can=fn=>!ST.moodle||!ST.moodle.functions||!ST.moodle.functions.length||ST.moodle.functions.includes(fn);
+async function listMoodleCourses(){
+  const m=ST.moodle; let all=null, current=new Set();
+  try{ const r=await ws("core_course_get_enrolled_courses_by_timeline_classification",{classification:"inprogress",limit:0,offset:0}); (r.courses||[]).forEach(c=>current.add(c.id)); }catch(e){ if(e.code==="invalidtoken") throw e; }
+  try{ all=await ws("core_enrol_get_users_courses",{userid:m.userid}); }
+  catch(e){ if(e.code==="invalidtoken"||!current.size) throw e; all=null; }
+  const now=Date.now()/1000;
+  return (all||[...current].map(id=>({id}))).map(c=>({id:c.id,name:c.fullname||c.displayname||c.shortname||("Course "+c.id),short:c.shortname||"",
+    current:current.size?current.has(c.id):(!c.enddate||c.enddate>now)&&c.visible!==0,ended:c.enddate&&c.enddate<now}));
+}
+
+/* ============ Sorting files into kinds ============ */
+function classify(name,file,type){
+  if(type==="link") return "link";
+  if(type==="page") return "notes";
+  const ext=extOf(file||name), s=(" "+name+" "+(file||"")+" ").toLowerCase().replace(/[_\-.()[\]]+/g," ");
+  if(["ppt","pptx","key","odp","pps","ppsx"].includes(ext)) return "slides";
+  if(/\b(slides?|lecture|lect?\s?\d+|deck|presentation|powerpoint|ppt)\b/.test(s)) return "slides";
+  if(/\b(notes?|handouts?|summary|study\s?guide|outline|cheat\s?sheet|review|worksheet)\b/.test(s)) return "notes";
+  if(/\b(readings?|chapter|ch\s?\d+|articles?|paper|textbook|excerpt|book)\b/.test(s)) return "reading";
+  if(["mp4","mov","webm","mp3","m4a","wav"].includes(ext)) return "other";
+  return "other";
+}
+
+/* ============ Import a course from Moodle ============ */
+const SYNC={on:false,label:"",done:0,total:0,err:null};
+function syncLine(){
+  const el=$("syncLine");
+  if(!SYNC.on&&!SYNC.err&&!SYNC.msg){ el.hidden=true; return; }
+  el.hidden=false;
+  const pct=SYNC.total?Math.round(SYNC.done/SYNC.total*100):0;
+  el.innerHTML=SYNC.on
+    ? `<span class="dot busy"></span><span class="grow">${esc(SYNC.label)}${SYNC.total?` · ${SYNC.done} of ${SYNC.total}`:""}</span><div class="progress"><i style="width:${pct}%"></i></div>`
+    : SYNC.err ? `<span class="dot err"></span><span class="grow">${esc(SYNC.err)}</span><a class="btn small" href="#/connect">Moodle settings</a><button class="link" data-act="dismissSync">Dismiss</button>`
+    : `<span class="dot ok"></span><span class="grow">${esc(SYNC.msg)}</span><button class="link" data-act="dismissSync">Dismiss</button>`;
+  hdr();
+}
+function hdr(){
+  const m=ST&&ST.moodle;
+  $("mDot").className="dot"+(SYNC.on?" busy":SYNC.err?" err":m?" ok":"");
+  $("mLbl").textContent=SYNC.on?"Syncing…":m?"Moodle":"Connect Moodle";
+}
+async function syncAll(only){
+  if(SYNC.on||!ST.moodle) return;
+  Object.assign(SYNC,{on:true,label:"Checking your Moodle classes",done:0,total:0,err:null,msg:null}); syncLine();
+  const courses=Object.values(ST.courses).filter(c=>c.moodleId&&!c.archived&&(!only||only.includes(c.id)));
+  const before=Object.keys(ST.materials).length, beforeA=Object.keys(ST.assignments).length;
+  try{
+    for(const c of courses){ SYNC.label="Reading "+c.name; syncLine(); await syncCourse(c); save(); render(); }
+    SYNC.label="Getting assignments"; syncLine();
+    await syncAssignments(courses);
+    ST.moodle.lastSync=Date.now(); save(); render();
+    await downloadQueue();
+    const nm=Object.keys(ST.materials).length-before, na=Object.keys(ST.assignments).length-beforeA;
+    SYNC.on=false; SYNC.msg=`Synced ${courses.length} class${courses.length===1?"":"es"}`+(nm>0?` · ${nm} new file${nm===1?"":"s"}`:"")+(na>0?` · ${na} new assignment${na===1?"":"s"}`:"")+".";
+  }catch(e){
+    SYNC.on=false; SYNC.err="Sync stopped: "+(e.message||e);
+  }
+  save(); syncLine(); render();
+  if(SYNC.msg) setTimeout(()=>{ if(!SYNC.on&&SYNC.msg){ SYNC.msg=null; syncLine(); } },6000);
+}
+function wsFileUrl(u){ if(!u) return u; return u.includes("/webservice/pluginfile.php")?u:u.replace("/pluginfile.php","/webservice/pluginfile.php"); }
+async function syncCourse(c){
+  const contents=await ws("core_course_get_contents",{courseid:c.moodleId});
+  const site=ST.moodle.site, seen=new Set();
+  c.cmSec={}; contents.forEach(s=>(s.modules||[]).forEach(mod=>c.cmSec[mod.id]="s"+s.id));
+  c.sections=contents.map(s=>({id:"s"+s.id,num:s.section,name:(s.name||"").trim()||(s.section===0?"General":"Section "+s.section),summary:trimTo(htmlText(s.summary||""),240)}));
+  const up=(id,data)=>{
+    seen.add(id); const old=ST.materials[id];
+    const m=Object.assign(old||{id,courseId:c.id,source:"moodle",status:"remote",addedAt:Date.now()},data);
+    if(!old||!old.kindSet) m.kind=classify(m.name,m.file,m.type);
+    if(!old||!old.sectionSet){ m.sectionId=data.sectionId; }
+    if(old&&old.status==="saved"&&data.mtime&&old.savedMtime&&data.mtime>old.savedMtime) m.status="stale";
+    ST.materials[id]=m; return m;
+  };
+  for(const s of contents){
+    for(const mod of s.modules||[]){
+      if(mod.uservisible===false||mod.visible===0) continue;
+      const base={sectionId:"s"+s.id,modId:mod.id,moodleUrl:mod.url||`${site}/mod/${mod.modname}/view.php?id=${mod.id}`};
+      if(mod.modname==="resource"||mod.modname==="folder"){
+        for(const f of (mod.contents||[]).filter(f=>f.type==="file")){
+          const id="mo"+mod.id+"-"+hash((f.filepath||"/")+f.filename);
+          const name=mod.modname==="resource"&&(mod.contents||[]).filter(x=>x.type==="file").length===1?mod.name:f.filename;
+          up(id,{...base,type:"file",name,file:f.filename,group:mod.modname==="folder"?mod.name:"",fileurl:wsFileUrl(f.fileurl),size:f.filesize||0,mtime:(f.timemodified||0)*1000,mime:f.mimetype||""});
+        }
+      } else if(mod.modname==="url"){
+        const f=(mod.contents||[])[0];
+        up("mu"+mod.id,{...base,type:"link",name:mod.name,href:(f&&f.fileurl)||mod.url,status:"saved"});
+      } else if(mod.modname==="page"){
+        up("mp"+mod.id,{...base,type:"page",name:mod.name,status:ST.materials["mp"+mod.id]?.status==="saved"?"saved":"remote",mtime:((mod.contents||[])[0]?.timemodified||0)*1000});
+      }
+    }
+  }
+  // Moodle pages: pull their text in one call
+  const pageIds=[...seen].filter(id=>id.startsWith("mp"));
+  if(pageIds.length&&can("mod_page_get_pages_by_courses")){
+    try{
+      const r=await ws("mod_page_get_pages_by_courses",{courseids:[c.moodleId]});
+      for(const p of r.pages||[]){
+        const m=ST.materials["mp"+p.coursemodule]; if(!m) continue;
+        const html=cleanHtml(p.content||""); await putText(m.id,{html,text:htmlText(p.content||"")});
+        m.status="saved"; m.size=html.length;
+      }
+    }catch(e){ if(e.code==="invalidtoken") throw e; }
+  }
+  // Things removed from Moodle: drop them unless a note points at them
+  for(const m of Object.values(ST.materials)){
+    if(m.courseId!==c.id||m.source!=="moodle"||seen.has(m.id)||m.assignId) continue;
+    if(Object.values(ST.notes).some(n=>n.materialId===m.id)) m.gone=true; else await removeMaterial(m.id);
+  }
+  c.syncedAt=Date.now();
+}
+async function syncAssignments(courses){
+  if(!courses.length||!can("mod_assign_get_assignments")) return;
+  const byMoodle=Object.fromEntries(courses.map(c=>[c.moodleId,c]));
+  const r=await ws("mod_assign_get_assignments",{courseids:courses.map(c=>c.moodleId)});
+  const seen=new Set();
+  for(const cr of r.courses||[]){
+    const c=byMoodle[cr.id]; if(!c) continue;
+    for(const a of cr.assignments||[]){
+      const id="a"+a.id; seen.add(id); const old=ST.assignments[id]||{};
+      ST.assignments[id]=Object.assign(old,{id,courseId:c.id,moodleId:a.id,cmid:a.cmid,name:a.name,due:(a.duedate||0)*1000,cutoff:(a.cutoffdate||0)*1000,opens:(a.allowsubmissionsfromdate||0)*1000,
+        intro:cleanHtml(a.intro||""),url:`${ST.moodle.site}/mod/assign/view.php?id=${a.cmid}`});
+      for(const f of a.introattachments||[]){
+        const mid="ma"+a.id+"-"+hash((f.filepath||"/")+f.filename), om=ST.materials[mid];
+        ST.materials[mid]=Object.assign(om||{id:mid,courseId:c.id,source:"moodle",status:"remote",addedAt:Date.now(),kind:"notes"},
+          {type:"file",name:f.filename,file:f.filename,assignId:id,group:"Assignment: "+a.name,sectionId:om?.sectionSet?om.sectionId:sectionOfCm(c,a.cmid),fileurl:wsFileUrl(f.fileurl),size:f.filesize||0,mtime:(f.timemodified||0)*1000,mime:f.mimetype||"",moodleUrl:ST.assignments[id].url});
+      }
+    }
+  }
+  for(const a of Object.values(ST.assignments)) if(a.moodleId&&!seen.has(a.id)&&courses.some(c=>c.id===a.courseId)) delete ST.assignments[a.id];
+  // Submitted? Only check the ones that still matter
+  if(!can("mod_assign_get_submission_status")) return;
+  const now=Date.now(), check=Object.values(ST.assignments).filter(a=>a.moodleId&&!a.submitted&&(!a.due||(a.due>now-30*DAY&&a.due<now+90*DAY))).slice(0,40);
+  SYNC.label="Checking what you've handed in"; SYNC.done=0; SYNC.total=check.length; syncLine();
+  await pool(check,4,async a=>{
+    try{ const s=await ws("mod_assign_get_submission_status",{assignid:a.moodleId}); const st=s.lastattempt?.submission?.status||s.lastattempt?.teamsubmission?.status;
+      a.submitted=st==="submitted"; if(s.feedback?.gradefordisplay) a.grade=htmlText(s.feedback.gradefordisplay); }
+    catch(e){ if(e.code==="invalidtoken") throw e; }
+    SYNC.done++; syncLine();
+  });
+}
+function sectionOfCm(c,cmid){ return (c.cmSec&&c.cmSec[cmid])||null; }
+async function pool(items,n,fn){ let i=0; await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{ while(i<items.length) await fn(items[i++]); })); }
+
+/* ============ Downloading files and reading their text ============ */
+async function downloadQueue(){
+  const lim=(ST.settings.maxMB||40)*1048576;
+  const q=Object.values(ST.materials).filter(m=>m.type==="file"&&m.fileurl&&(m.status==="remote"||m.status==="stale")&&!m.dlFailed&&ST.settings.autoDownload&&(!m.size||m.size<=lim));
+  if(!q.length) return;
+  SYNC.label="Downloading slides and files"; SYNC.done=0; SYNC.total=q.length; syncLine();
+  let failed=0;
+  await pool(q,3,async m=>{ try{ await downloadOne(m); }catch(e){ failed++; m.dlFailed=e.message||String(e); } SYNC.done++; syncLine(); save(); });
+  if(failed) toast(`${failed} file${failed===1?"":"s"} couldn't be downloaded. Open them in Moodle and drop them in here instead.`);
+}
+async function downloadOne(m){
+  const u=m.fileurl+(m.fileurl.includes("?")?"&":"?")+"token="+encodeURIComponent(ST.moodle.token);
+  let r; try{ r=await fetch(u,{credentials:"omit"}); }catch(e){ throw new Error("Moodle didn't let the browser download this file."); }
+  if(!r.ok) throw new Error("Download failed (HTTP "+r.status+").");
+  const blob=await r.blob();
+  if(/json/.test(blob.type)&&blob.size<4000){ const t=await blob.text(); if(/"error"|"exception"/.test(t)) throw new Error("Moodle wouldn't hand over this file."); }
+  await storeFile(m,blob);
+}
+async function storeFile(m,blob){
+  await DB.put("files",m.id,blob);
+  m.status="saved"; m.savedMtime=m.mtime||Date.now(); m.size=blob.size; m.mime=m.mime||blob.type; delete m.dlFailed;
+  await extract(m,blob);
+  if(ST.settings.autoOutline&&m.kind==="slides"&&!ST.outlined[m.id]) makeOutline(m);
+  save();
+}
+async function extract(m,blob){
+  const ext=extOf(m.file||m.name); let out=null; delete m.readErr;
+  try{
+    if(ext==="pdf"||/pdf/.test(blob.type)) out=await pdfExtract(await blob.arrayBuffer());
+    else if(ext==="pptx"||ext==="ppsx") out=await pptxExtract(await blob.arrayBuffer());
+    else if(ext==="docx") out=await docxExtract(await blob.arrayBuffer());
+    else if(["txt","md","csv","tsv"].includes(ext)||/^text\/plain/.test(blob.type)) out={text:await blob.text()};
+    else if(ext==="html"||ext==="htm") { const h=await blob.text(); out={html:cleanHtml(h),text:htmlText(h)}; }
+  }catch(e){ m.readErr=e.message||String(e); }
+  if(out){ if(!out.text&&out.slides) out.text=out.slides.map(s=>[s.title,...s.lines,s.notes].filter(Boolean).join("\n")).join("\n\n"); m.pages=out.slides?out.slides.length:0; await putText(m.id,out); }
+}
+// Minimal .zip reader for Office files
+async function unzip(buf,want){
+  const dv=new DataView(buf), out={};
+  let e=buf.byteLength-22; while(e>=0&&dv.getUint32(e,true)!==0x06054b50) e--;
+  if(e<0) throw new Error("This file looks damaged.");
+  let off=dv.getUint32(e+16,true); const n=dv.getUint16(e+10,true), dec=new TextDecoder();
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(off,true)!==0x02014b50) break;
+    const method=dv.getUint16(off+10,true), csize=dv.getUint32(off+20,true), nl=dv.getUint16(off+28,true), xl=dv.getUint16(off+30,true), cl=dv.getUint16(off+32,true), lho=dv.getUint32(off+42,true);
+    const name=dec.decode(new Uint8Array(buf,off+46,nl)); off+=46+nl+xl+cl;
+    if(!want(name)) continue;
+    const start=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true), data=new Uint8Array(buf,start,csize);
+    if(method===0) out[name]=dec.decode(data);
+    else if(method===8){
+      if(typeof DecompressionStream==="undefined") throw new Error("This browser can't open Office files.");
+      out[name]=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+    }
+  }
+  return out;
+}
+const xml=t=>new DOMParser().parseFromString(t,"application/xml");
+const NS={p:"http://schemas.openxmlformats.org/presentationml/2006/main",a:"http://schemas.openxmlformats.org/drawingml/2006/main",w:"http://schemas.openxmlformats.org/wordprocessingml/2006/main"};
+async function pptxExtract(buf){
+  const f=await unzip(buf,n=>/^ppt\/(slides|notesSlides)\/(_rels\/)?(slide|notesSlide)\d+\.xml(\.rels)?$/.test(n)||n==="ppt/presentation.xml"||n==="ppt/_rels/presentation.xml.rels");
+  let order=[];
+  try{
+    const rels=Object.fromEntries([...xml(f["ppt/_rels/presentation.xml.rels"]).getElementsByTagName("Relationship")].map(r=>[r.getAttribute("Id"),r.getAttribute("Target")]));
+    order=[...xml(f["ppt/presentation.xml"]).getElementsByTagNameNS(NS.p,"sldId")].map(s=>"ppt/"+rels[s.getAttribute("r:id")].replace(/^\/?ppt\//,"")).filter(k=>f[k]);
+  }catch(e){}
+  if(!order.length) order=Object.keys(f).filter(k=>/^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a,b)=>+a.match(/\d+/)-+b.match(/\d+/));
+  const paras=el=>[...el.getElementsByTagNameNS(NS.a,"p")].map(p=>[...p.getElementsByTagNameNS(NS.a,"t")].map(t=>t.textContent).join("").trim()).filter(Boolean);
+  const slides=order.map((k,i)=>{
+    const d=xml(f[k]); let title="", lines=[];
+    for(const sp of d.getElementsByTagNameNS(NS.p,"sp")){
+      const ph=sp.getElementsByTagNameNS(NS.p,"ph")[0], t=ph&&ph.getAttribute("type");
+      if(t==="sldNum"||t==="dt"||t==="ftr") continue;
+      const ps=paras(sp); if(!ps.length) continue;
+      if((t==="title"||t==="ctrTitle")&&!title) title=ps.join(" "); else lines.push(...ps);
+    }
+    for(const g of d.getElementsByTagNameNS(NS.p,"graphicFrame")) for(const tr of g.getElementsByTagNameNS(NS.a,"tr")) lines.push([...tr.getElementsByTagNameNS(NS.a,"tc")].map(tc=>paras(tc).join(" ")).join(" | "));
+    if(!title&&lines.length) title=lines.shift();
+    let notes="";
+    try{
+      const rel=[...xml(f[k.replace("slides/","slides/_rels/")+".rels"]).getElementsByTagName("Relationship")].find(r=>/notesSlide$/.test(r.getAttribute("Type")));
+      if(rel){ const nk="ppt/notesSlides/"+rel.getAttribute("Target").split("/").pop(), nd=f[nk]&&xml(f[nk]);
+        if(nd) for(const sp of nd.getElementsByTagNameNS(NS.p,"sp")){ const ph=sp.getElementsByTagNameNS(NS.p,"ph")[0]; if(ph&&ph.getAttribute("type")==="body") notes+=paras(sp).join("\n"); } }
+    }catch(e){}
+    return {n:i+1,title,lines,notes};
+  });
+  return {slides};
+}
+async function docxExtract(buf){
+  const f=await unzip(buf,n=>n==="word/document.xml");
+  if(!f["word/document.xml"]) throw new Error("Couldn't find the text in that Word file.");
+  const body=xml(f["word/document.xml"]).getElementsByTagNameNS(NS.w,"body")[0], md=[];
+  for(const p of body.getElementsByTagNameNS(NS.w,"p")){
+    const t=[...p.getElementsByTagNameNS(NS.w,"t")].map(x=>x.textContent).join("").trim(); if(!t) continue;
+    const st=p.getElementsByTagNameNS(NS.w,"pStyle")[0]?.getAttributeNS(NS.w,"val")||"";
+    const h=/^(Title|Heading1)$/i.test(st)?"## ":/^Heading[2-3]$/i.test(st)?"### ":/List/i.test(st)?"- ":"";
+    md.push(h+t);
+  }
+  return {md:md.join("\n\n"),text:md.join("\n").replace(/^(#+|-) /gm,"")};
+}
+function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Couldn't load the PDF reader. Open the app once while online.")); document.head.appendChild(s); }); }
+async function pdfjs(){ if(!window.pdfjsLib){ await loadScript("vendor/pdf.min.js"); } pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js"; return pdfjsLib; }
+async function pdfExtract(buf){
+  const lib=await pdfjs(), pdf=await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise, slides=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const items=(await (await pdf.getPage(p)).getTextContent()).items.filter(i=>i.str!==undefined&&i.str.trim());
+    const rows=[];
+    for(const it of items){
+      const y=it.transform[5], size=Math.hypot(it.transform[2],it.transform[3])||10;
+      let row=rows.find(r=>Math.abs(r.y-y)<size*0.45); if(!row){ row={y,items:[],size:0}; rows.push(row); }
+      row.items.push({x:it.transform[4],w:it.width,s:it.str,size}); row.size=Math.max(row.size,size);
+    }
+    rows.sort((a,b)=>b.y-a.y);
+    const lines=rows.map(r=>{ r.items.sort((a,b)=>a.x-b.x); let l="",end=null; for(const it of r.items){ if(end!==null&&it.x-end>it.size*0.15) l+=" "; l+=it.s; end=it.x+it.w; } return {t:l.replace(/\s+/g," ").trim(),size:r.size}; }).filter(l=>l.t);
+    let ti=-1, big=0; lines.slice(0,4).forEach((l,i)=>{ if(l.size>big*1.05&&l.t.length<=120){ big=l.size; ti=i; } });
+    const title=ti>=0?lines[ti].t:"";
+    slides.push({n:p,title,lines:lines.filter((l,i)=>i!==ti).map(l=>l.t),notes:""});
+  }
+  return {slides,pdf:true};
+}
+
+/* ============ HTML from Moodle: keep the text, drop anything active ============ */
+const OK_TAGS=new Set("P BR B STRONG I EM U S UL OL LI H1 H2 H3 H4 H5 H6 A TABLE THEAD TBODY TFOOT TR TD TH BLOCKQUOTE PRE CODE SPAN DIV HR SUB SUP SMALL DL DT DD".split(" "));
+const DROP_TAGS=new Set("SCRIPT STYLE IFRAME OBJECT EMBED FORM INPUT BUTTON TEXTAREA SELECT LINK META SVG MATH NOSCRIPT TEMPLATE IMG VIDEO AUDIO SOURCE CANVAS FRAME FRAMESET BASE".split(" "));
+function cleanHtml(html){
+  const doc=new DOMParser().parseFromString(String(html),"text/html");
+  const walk=n=>{ for(const c of [...n.children]){
+    if(DROP_TAGS.has(c.tagName)){ c.remove(); continue; }
+    walk(c);
+    if(!OK_TAGS.has(c.tagName)){ c.replaceWith(...c.childNodes); continue; }
+    for(const a of [...c.attributes]){ const k=a.name.toLowerCase(); if((c.tagName==="A"&&k==="href"&&/^https?:\/\//i.test(a.value.trim()))||k==="colspan"||k==="rowspan") continue; c.removeAttribute(a.name); }
+    if(c.tagName==="A"){ c.setAttribute("target","_blank"); c.setAttribute("rel","noopener noreferrer"); }
+  } };
+  walk(doc.body); return doc.body.innerHTML.trim();
+}
+function htmlText(html){ const d=new DOMParser().parseFromString(String(html),"text/html"); d.querySelectorAll("script,style").forEach(x=>x.remove()); d.querySelectorAll("br,p,li,h1,h2,h3,h4,div,tr").forEach(x=>x.append("\n")); return (d.body.textContent||"").replace(/[ \t\u00a0]+/g," ").replace(/\n\s*\n+/g,"\n").trim(); }
+
+/* ============ Notes: outlines made from slides ============ */
+function makeOutline(m,open){
+  const t=TEXT[m.id];
+  const body=[`From [[${m.id}]]`,""];
+  if(t&&t.slides&&t.slides.length){
+    for(const s of t.slides){
+      body.push(`## Slide ${s.n}${s.title?" · "+trimTo(s.title,90):""}`);
+      for(const l of s.lines.slice(0,6)) body.push("- "+trimTo(l,180));
+      if(s.lines.length>6) body.push("- …");
+      if(s.notes) body.push("> "+trimTo(s.notes,400));
+      body.push("");
+    }
+  } else if(t&&t.md){ body.push(t.md); }
+  else if(t&&t.text){ body.push(...t.text.split(/\n+/).slice(0,80).map(l=>"- "+trimTo(l,180))); }
+  else body.push("");
+  const n=newNote({courseId:m.courseId,sectionId:m.sectionId,title:m.name.replace(/\.[a-z0-9]{2,5}$/i,""),body:body.join("\n"),materialId:m.id,auto:true});
+  ST.outlined[m.id]=n.id; save();
+  if(open) location.hash="#/n/"+n.id;
+  return n;
+}
+function newNote(o){
+  const n=Object.assign({id:"n"+uid(),courseId:null,sectionId:null,title:"",body:"",createdAt:Date.now(),updatedAt:Date.now()},o);
+  ST.notes[n.id]=n; save(); return n;
+}
+function notesFor(mid){ return Object.values(ST.notes).filter(n=>n.materialId===mid).sort((a,b)=>b.updatedAt-a.updatedAt); }
+
+/* ============ Markdown (small, escaped first) ============ */
+function inline(s){
+  s=esc(s);
+  s=s.replace(/\[\[([a-z0-9-]+)\]\]/gi,(x,id)=>{ const m=ST.materials[id]; return m?`<a class="matref" href="#/m/${esc(id)}">${IC[m.kind]?`<span class="kind ${m.kind}" style="width:18px;height:18px;background:none">${IC[m.kind]}</span>`:""}${esc(m.name)}</a>`:x; });
+  s=s.replace(/`([^`]+)`/g,"<code>$1</code>")
+     .replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+     .replace(/(^|[^*])\*([^*\s][^*]*)\*/g,"$1<em>$2</em>")
+     .replace(/==([^=]+)==/g,"<mark>$1</mark>")
+     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return s;
+}
+function md(src){
+  const lines=String(src||"").split("\n"), out=[]; let list=null, para=[], quote=[];
+  const endPara=()=>{ if(para.length){ out.push("<p>"+para.map(inline).join("<br>")+"</p>"); para=[]; } };
+  const endList=()=>{ if(list){ out.push(`</${list}>`); list=null; } };
+  const endQuote=()=>{ if(quote.length){ out.push("<blockquote>"+quote.map(inline).join("<br>")+"</blockquote>"); quote=[]; } };
+  lines.forEach((l,i)=>{
+    let m;
+    if(!l.trim()){ endPara(); endList(); endQuote(); return; }
+    if((m=/^(#{1,3})\s+(.*)/.exec(l))){ endPara(); endList(); endQuote(); const lv=m[1].length, sl=/^Slide (\d+)/.exec(m[2]); out.push(`<h${lv}${sl?` data-slide="${sl[1]}" title="Show this slide"`:""}>${inline(m[2])}</h${lv}>`); return; }
+    if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){ endPara(); endList(); endQuote(); out.push("<hr>"); return; }
+    if((m=/^>\s?(.*)/.exec(l))){ endPara(); endList(); quote.push(m[1]); return; }
+    if((m=/^\s*[-*]\s+\[([ xX])\]\s*(.*)/.exec(l))){ endPara(); endQuote(); if(list!=="ul"){ endList(); out.push("<ul>"); list="ul"; } out.push(`<li class="task"><label><input type="checkbox" data-line="${i}"${m[1]!==" "?" checked":""}>${inline(m[2])}</label></li>`); return; }
+    if((m=/^\s*[-*•]\s+(.*)/.exec(l))){ endPara(); endQuote(); if(list!=="ul"){ endList(); out.push("<ul>"); list="ul"; } out.push(`<li>${inline(m[1])}</li>`); return; }
+    if((m=/^\s*\d+[.)]\s+(.*)/.exec(l))){ endPara(); endQuote(); if(list!=="ol"){ endList(); out.push("<ol>"); list="ol"; } out.push(`<li>${inline(m[1])}</li>`); return; }
+    endList(); endQuote(); para.push(l);
+  });
+  endPara(); endList(); endQuote();
+  return out.join("");
+}
+const plain=s=>String(s||"").replace(/\[\[([a-z0-9-]+)\]\]/gi,(x,id)=>ST.materials[id]?.name||"").replace(/[#>*`=_]|\[[ xX]\]/g,"").replace(/\s+/g," ").trim();
+
+/* ============ Views ============ */
+const main=$("main");
+let VIEW={}, viewerCleanup=null;
+function route(){
+  if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
+  const h=decodeURI(location.hash.slice(1)||"/"), [path,qs]=h.split("?"), p=path.split("/").filter(Boolean), q=new URLSearchParams(qs||"");
+  VIEW={name:p[0]||"home",id:p[1],tab:p[2],q};
+  $("wrap").classList.toggle("wide",VIEW.name==="n");
+  render(true);
+  if(VIEW.name!=="search"&&document.activeElement!==$("q")) $("q").value="";
+}
+window.addEventListener("hashchange",route);
+let lastFocusKeep=null;
+function render(nav){
+  if(!ST) return;
+  hdr();
+  // Don't wipe a note while someone's typing in it
+  const v=VIEW.name, y=nav?0:scrollY;
+  if(!nav&&["n","m","pick","add","connect"].includes(v)&&!(v==="connect"&&ST.moodle)) return;
+  if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
+  if(v==="home") homeView();
+  else if(v==="c") courseView();
+  else if(v==="n") noteView();
+  else if(v==="m") materialView();
+  else if(v==="connect") connectView();
+  else if(v==="pick") pickView();
+  else if(v==="search") searchView();
+  else if(v==="add") addCourseView();
+  else homeView();
+  if(nav) scrollTo(0,0); else scrollTo(0,y);
+}
+const courseName=id=>ST.courses[id]?.name||"No class";
+const courseColor=id=>ST.courses[id]?.color||"var(--line)";
+function courses(){ return Object.values(ST.courses).filter(c=>!c.archived).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)); }
+function assignRow(a,showCourse){
+  const now=Date.now(), late=a.due&&a.due<now&&!a.submitted&&!a.done, soon=a.due&&a.due>now&&a.due-now<3*DAY, fin=a.done||a.submitted;
+  const n=Object.values(ST.notes).find(x=>x.assignId===a.id);
+  return `<div class="row${fin?" done-row":""}" style="--c:${courseColor(a.courseId)}">
+    <input type="checkbox" class="ck" data-act="assignDone" data-id="${a.id}" ${fin?"checked":""} ${a.submitted?"disabled title=\"Submitted on Moodle\"":`aria-label="Mark ${esc(a.name)} done"`}>
+    <a class="row-open" href="#/c/${a.courseId}/assignments?a=${a.id}"><b>${esc(a.name)}</b><small>${showCourse?`<span class="cdot"></span>${esc(courseName(a.courseId))}`:""}
+      <span class="due">${esc(fmtDue(a.due))}</span>${a.submitted?'<span class="tag good">Submitted</span>':a.done?'<span class="tag good">Done</span>':late?'<span class="tag bad">Overdue</span>':soon?'<span class="tag warn">Due soon</span>':""}${a.grade?`<span class="tag acc">Grade ${esc(a.grade)}</span>`:""}</small></a>
+    <div class="acts">${n?`<a class="btn small" href="#/n/${n.id}">${IC.note}Notes</a>`:`<button class="btn small" data-act="assignNote" data-id="${a.id}">${IC.note}Plan it</button>`}${a.url?`<a class="btn small" href="${esc(a.url)}" target="_blank" rel="noopener">Moodle</a>`:""}</div></div>`;
+}
+function noteRow(n,showCourse){
+  const m=n.materialId&&ST.materials[n.materialId];
+  return `<div class="row"><span class="kind notes">${IC.note}</span><a class="row-open" href="#/n/${n.id}"><b>${esc(n.title||"Untitled note")}</b>
+    <small>${showCourse&&n.courseId?`<span class="cdot" style="--c:${courseColor(n.courseId)}"></span>${esc(courseName(n.courseId))}`:""}<span>Edited ${esc(ago(n.updatedAt))}</span>${m?`<span>· from ${esc(trimTo(m.name,40))}</span>`:""}</small>
+    ${n.body?`<span class="snip">${esc(trimTo(plain(n.body.replace(/^From \[\[[^\]]+\]\]/,"")),140))}</span>`:""}</a><div class="acts"></div></div>`;
+}
+function matRow(m){
+  const ns=notesFor(m.id), ext=extOf(m.file||"");
+  const st=m.type==="link"?`<span>${esc(trimTo((m.href||"").replace(/^https?:\/\//,""),40))}</span>`
+    : m.status==="saved"?`<span class="tag good">Saved</span>`
+    : m.status==="stale"?`<span class="tag warn">Updated on Moodle</span>`
+    : m.dlFailed?`<span class="tag bad" title="${esc(m.dlFailed)}">Not downloaded</span>`:`<span class="tag">On Moodle</span>`;
+  return `<div class="row"><span class="kind ${m.kind}">${IC[m.kind]||IC.other}</span>
+    <a class="row-open" href="#/m/${m.id}"><b>${esc(m.name)}</b><small>${m.type==="page"?"<span>Moodle page</span>":ext?`<span>${ext.toUpperCase()}</span>`:""}${m.size&&m.type==="file"?`<span>${fmtSize(m.size)}</span>`:""}${m.pages?`<span>${m.pages} ${extOf(m.file)==="pdf"?"pages":"slides"}</span>`:""}${st}${m.gone?'<span class="tag">Removed from Moodle</span>':""}${m.group&&m.group!==m.name?`<span>in ${esc(trimTo(m.group,40))}</span>`:""}</small></a>
+    <div class="acts">${m.type==="link"?`<a class="btn small" href="${esc(m.href)}" target="_blank" rel="noopener">Open</a>`:""}${ns.length?`<a class="btn small" href="#/n/${ns[0].id}">${IC.note}Notes${ns.length>1?" ("+ns.length+")":""}</a>`:m.type!=="link"?`<button class="btn small" data-act="takeNotes" data-id="${m.id}">${IC.note}Take notes</button>`:""}</div></div>`;
+}
+
+function homeView(){
+  const cs=courses(), now=Date.now(), m=ST.moodle;
+  const due=Object.values(ST.assignments).filter(a=>!ST.courses[a.courseId]?.archived&&!a.done&&!a.submitted&&a.due&&a.due>now-7*DAY&&a.due<now+21*DAY).sort((a,b)=>a.due-b.due).slice(0,8);
+  const recent=Object.values(ST.notes).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);
+  if(!cs.length){
+    main.innerHTML=`<section class="card" style="gap:16px">
+      <h2>All your class notes, sorted for you</h2>
+      <p class="muted" style="margin:0">Connect Moodle and Recall Notes brings in your classes, assignments and due dates, then downloads the slides, handouts and readings and files them by class and week. Every slide deck gets a note outline, one heading per slide, ready for you to fill in.</p>
+      <div class="btnrow"><a class="btn primary" href="#/connect">Connect Moodle</a><a class="btn" href="#/add">Add a class yourself</a><button class="link" data-act="demo">Try a sample class</button></div>
+    </section>
+    ${recent.length?`<section class="group"><h3>Notes without a class</h3><div class="list">${recent.map(n=>noteRow(n)).join("")}</div></section>`:""}`;
+    return;
+  }
+  main.innerHTML=`
+    ${m?"":`<div class="statusline"><span class="grow">Bring in your classes, slides and assignments automatically.</span><a class="btn small primary" href="#/connect">Connect Moodle</a></div>`}
+    <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""}>${IC.sync}Sync now</button>`:""}<a class="btn small" href="#/add">+ Add class</a></span></div>
+      ${m?`<p class="hint">Last synced with ${esc(m.sitename||"Moodle")} ${esc(ago(m.lastSync))}</p>`:""}
+      <div class="grid">${cs.map(c=>{ const mats=Object.values(ST.materials).filter(x=>x.courseId===c.id&&!x.gone), nn=Object.values(ST.notes).filter(x=>x.courseId===c.id).length,
+        open=Object.values(ST.assignments).filter(a=>a.courseId===c.id&&!a.done&&!a.submitted&&a.due>now).length;
+        return `<a class="course" href="#/c/${c.id}" style="--c:${c.color}"><b>${esc(c.name)}</b><small>${c.short&&c.short!==c.name?`<span>${esc(c.short)}</span>`:""}<span>${mats.filter(x=>x.kind==="slides").length} slides</span><span>${nn} notes</span>${open?`<span>${open} due</span>`:""}</small></a>`; }).join("")}</div></section>
+    <section class="group"><div class="group-h"><h2>Coming up</h2></div>
+      ${due.length?`<div class="list">${due.map(a=>assignRow(a,true)).join("")}</div>`:`<p class="empty">${Object.keys(ST.assignments).length?"Nothing due in the next three weeks.":"No assignments yet."}</p>`}</section>
+    <section class="group"><div class="group-h"><h2>Recent notes</h2><button class="btn small" data-act="newNote">+ New note</button></div>
+      ${recent.length?`<div class="list">${recent.map(n=>noteRow(n,true)).join("")}</div>`:`<p class="empty">No notes yet. Open a slide deck and choose “Take notes”.</p>`}</section>`;
+}
+
+function courseView(){
+  const c=ST.courses[VIEW.id]; if(!c){ main.innerHTML=`<p class="empty">That class isn't here any more. <a href="#/">Go home</a></p>`; return; }
+  const tab=VIEW.tab||"materials", mats=Object.values(ST.materials).filter(m=>m.courseId===c.id&&!(m.gone&&!notesFor(m.id).length));
+  const notes=Object.values(ST.notes).filter(n=>n.courseId===c.id), asg=Object.values(ST.assignments).filter(a=>a.courseId===c.id);
+  const secs=sectionsOf(c);
+  let body="";
+  if(tab==="materials"){
+    const f=VIEW.q.get("kind")||"all", by=VIEW.q.get("by")||"week";
+    const shown=mats.filter(m=>f==="all"||m.kind===f);
+    const counts=Object.fromEntries(KIND_ORDER.map(k=>[k,mats.filter(m=>m.kind===k).length]));
+    const qs=(o)=>{ const p=new URLSearchParams({kind:f,by,...o}); return `#/c/${c.id}/materials?${p}`; };
+    const chips=`<div class="chips" role="group" aria-label="Show"><a class="chip" href="${qs({kind:"all"})}" aria-pressed="${f==="all"}">All <span>${mats.length}</span></a>${KIND_ORDER.filter(k=>counts[k]).map(k=>`<a class="chip" href="${qs({kind:k})}" aria-pressed="${f===k}">${KINDS[k]} <span>${counts[k]}</span></a>`).join("")}
+      <span style="flex:1"></span><span class="seg" role="group" aria-label="Group by"><button data-go="${qs({by:"week"})}" aria-pressed="${by==="week"}">By week</button><button data-go="${qs({by:"type"})}" aria-pressed="${by==="type"}">By type</button></span></div>`;
+    let groups;
+    if(by==="type") groups=KIND_ORDER.map(k=>({h:KINDS[k],items:shown.filter(m=>m.kind===k)}));
+    else groups=secs.map(s=>({h:s.name,sum:s.summary,items:shown.filter(m=>secOf(secs,m.sectionId)===s.id)}));
+    const sortItems=a=>a.sort((x,y)=>KIND_ORDER.indexOf(x.kind)-KIND_ORDER.indexOf(y.kind)||x.name.localeCompare(y.name,undefined,{numeric:true}));
+    body=`${chips}
+      <div class="drop" id="drop"><button class="btn small" data-act="pickFiles">Add files</button><span class="hint">Drop slides, PDFs or Word files here to file them in this class.</span><input type="file" id="fileIn" class="vh" multiple tabindex="-1" aria-hidden="true"></div>
+      ${shown.length?groups.filter(g=>g.items.length).map(g=>`<section class="group"><div class="group-h"><h3>${esc(g.h)}<span>${g.items.length}</span></h3></div>${g.sum?`<p class="group-sum">${esc(g.sum)}</p>`:""}<div class="list">${sortItems(g.items).map(matRow).join("")}</div></section>`).join("")
+        :`<p class="empty">${mats.length?"Nothing of that type.":c.moodleId?"No files yet. Sync to bring them in.":"No files yet. Add some above."}</p>`}`;
+  } else if(tab==="notes"){
+    const groups=secs.map(s=>({s,items:notes.filter(n=>secOf(secs,n.sectionId)===s.id)}));
+    body=`<div class="btnrow"><button class="btn primary small" data-act="newNote" data-course="${c.id}">+ New note</button><span class="hint">Notes are filed under the same weeks as the class on Moodle.</span></div>
+      ${notes.length?groups.filter(g=>g.items.length).map(g=>`<section class="group"><div class="group-h"><h3>${esc(g.s.id==="upl"?"Not filed under a week":g.s.name)}<span>${g.items.length}</span></h3></div><div class="list">${g.items.sort((a,b)=>b.updatedAt-a.updatedAt).map(n=>noteRow(n)).join("")}</div></section>`).join("")
+        :`<p class="empty">No notes for this class yet. Open some slides and choose “Take notes”, or start a blank note.</p>`}`;
+  } else {
+    const now=Date.now(), sel=VIEW.q.get("a");
+    const up=asg.filter(a=>!a.due||a.due>=now-DAY||(!a.done&&!a.submitted)).sort((a,b)=>(a.due||9e15)-(b.due||9e15)), past=asg.filter(a=>!up.includes(a)).sort((a,b)=>b.due-a.due);
+    const one=sel&&ST.assignments[sel];
+    body=`${one?assignDetail(one):""}
+      <div class="btnrow"><button class="btn small" data-act="addAssign" data-course="${c.id}">+ Add assignment</button></div>
+      ${asg.length?`<section class="group"><h3>Upcoming and open</h3>${up.length?`<div class="list">${up.map(a=>assignRow(a)).join("")}</div>`:`<p class="hint">All caught up.</p>`}</section>
+      ${past.length?`<details class="group"><summary class="link" style="text-decoration:none">Finished and past (${past.length})</summary><div class="list" style="margin-top:8px">${past.map(a=>assignRow(a)).join("")}</div></details>`:""}`
+        :`<p class="empty">No assignments yet.</p>`}`;
+  }
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div>
+    <div class="sec-top"><h2 style="display:flex;gap:10px;align-items:center"><span class="cdot" style="--c:${c.color};width:14px;height:14px"></span>${esc(c.name)}</h2>
+      <span class="btnrow">${c.moodleId&&ST.moodle?`<button class="btn small" data-act="syncOne" data-id="${c.id}" ${SYNC.on?"disabled":""}>${IC.sync}Sync</button>`:""}
+      <span class="menu"><button class="btn small" data-act="courseMenu" aria-expanded="false">Class options</button><div class="menu-pop" id="cMenu" hidden>
+        <label>Name<input class="in" id="cName" value="${esc(c.name)}"></label>
+        <label>Color<span class="chips">${COLORS.map(col=>`<button class="chip" data-act="cColor" data-c="${col}" aria-pressed="${col===c.color}" style="width:28px;height:28px;padding:0;background:${col};border-color:${col===c.color?"var(--ink)":col}" aria-label="Color"></button>`).join("")}</span></label>
+        ${c.moodleUrl?`<a href="${esc(c.moodleUrl)}" target="_blank" rel="noopener">Open on Moodle</a>`:""}
+        <button class="btn small danger" data-act="archive" data-id="${c.id}">Remove class from this device</button></div></span></span></div>
+    <nav class="tabs" aria-label="Class sections"><a href="#/c/${c.id}/materials" ${tab==="materials"?'aria-current="page"':""}>Slides & files <span>${mats.length}</span></a><a href="#/c/${c.id}/notes" ${tab==="notes"?'aria-current="page"':""}>Notes <span>${notes.length}</span></a><a href="#/c/${c.id}/assignments" ${tab==="assignments"?'aria-current="page"':""}>Assignments <span>${asg.filter(a=>!a.done&&!a.submitted).length}</span></a></nav>
+    ${body}`;
+  if(tab==="materials") wireDrop(c);
+  const cn=$("cName"); if(cn) cn.onchange=()=>{ c.name=cn.value.trim()||c.name; save(); render(); };
+}
+const secOf=(secs,id)=>id&&secs.some(x=>x.id===id)?id:"upl";
+function sectionsOf(c){
+  const s=(c.sections||[]).slice().sort((a,b)=>a.num-b.num);
+  if(!s.some(x=>x.id==="upl")) s.push({id:"upl",num:9999,name:c.moodleId?"Added by you":"Files"});
+  return s;
+}
+function assignDetail(a){
+  return `<section class="card" id="aDetail"><div class="sec-top"><h3>${esc(a.name)}</h3><a class="link" href="#/c/${a.courseId}/assignments">Close</a></div>
+    <div class="chips"><span class="tag ${a.due&&a.due<Date.now()&&!a.submitted&&!a.done?"bad":""}">Due ${esc(fmtDue(a.due))}</span>${a.cutoff?`<span class="tag">Closes ${esc(fmtDue(a.cutoff))}</span>`:""}${a.submitted?'<span class="tag good">Submitted</span>':""}</div>
+    ${a.intro?`<div class="html-body">${a.intro}</div>`:a.moodleId?'<p class="hint">No instructions on Moodle.</p>':""}
+    ${Object.values(ST.materials).filter(m=>m.assignId===a.id).map(matRow).join("")}
+    ${!a.moodleId?`<div class="btnrow"><button class="link danger" data-act="delAssign" data-id="${a.id}">Delete assignment</button></div>`:""}</section>`;
+}
+
+function noteView(){
+  const n=ST.notes[VIEW.id]; if(!n){ main.innerHTML=`<p class="empty">That note was deleted. <a href="#/">Go home</a></p>`; return; }
+  const m=n.materialId&&ST.materials[n.materialId], c=ST.courses[n.courseId];
+  const mode=VIEW.q.get("view")==="read"?"read":"edit";
+  const secOpts=c?sectionsOf(c).map(s=>`<option value="${s.id}" ${(n.sectionId||"upl")===s.id?"selected":""}>${esc(s.name)}</option>`).join(""):"";
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span>${c?`<a href="#/c/${c.id}/notes">${esc(c.name)}</a><span>›</span>`:""}</div>
+  <div class="note-layout${m?" split":""}">
+    <div class="note-head" style="min-width:0">
+      <input class="title-in" id="nTitle" value="${esc(n.title)}" placeholder="Untitled note" aria-label="Note title">
+      <div class="note-meta">
+        <select id="nCourse" aria-label="Class"><option value="">No class</option>${courses().map(x=>`<option value="${x.id}" ${x.id===n.courseId?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
+        ${c?`<select id="nSec" aria-label="Week or topic">${secOpts}</select>`:""}
+        <span class="saved" id="nSaved">Saved</span><span style="flex:1"></span>
+        <button class="btn small" data-act="toCards">Make flashcards</button>
+        <button class="btn small" data-act="exportNote">Download</button>
+        <button class="link danger" data-act="delNote">Delete</button>
+      </div>
+      <div>
+        <div class="toolbar" role="toolbar" aria-label="Formatting">
+          <span class="seg" role="group" aria-label="Mode"><button data-act="mode" data-m="edit" aria-pressed="${mode==="edit"}">Write</button><button data-act="mode" data-m="read" aria-pressed="${mode==="read"}">Read</button></span>
+          <span class="sep"></span>
+          <button class="tb" data-fmt="h" title="Heading">H</button><button class="tb" data-fmt="b" title="Bold (Ctrl+B)">B</button><button class="tb" data-fmt="i" title="Italic (Ctrl+I)"><i>I</i></button><button class="tb" data-fmt="hl" title="Highlight">==</button>
+          <button class="tb" data-fmt="ul" title="Bullet list">•</button><button class="tb" data-fmt="task" title="To-do">☐</button><button class="tb" data-fmt="q" title="Quote">❝</button><button class="tb" data-fmt="term" title="Key term (becomes a flashcard)">T–D</button>
+        </div>
+        <textarea class="editor" id="nBody" spellcheck="true" placeholder="Start typing. Use “- ” for bullets, “## ” for headings, and “Term - definition” lines to make flashcards later." ${mode==="read"?"hidden":""}>${esc(n.body)}</textarea>
+        <div class="md" id="nRead" ${mode==="read"?"":"hidden"}></div>
+      </div>
+      <p class="hint">${m?"Click a “Slide” heading in Read mode to jump to that slide. ":""}Lines like “Mitosis - cell division” turn into flashcards.</p>
+    </div>
+    ${m?`<aside class="viewer-pane card" id="vPane" aria-label="Source"></aside>`:""}
+  </div>`;
+  const body=$("nBody"), title=$("nTitle");
+  const touch=()=>{ n.updatedAt=Date.now(); $("nSaved").textContent="Saving…"; save(); clearTimeout(touch.t); touch.t=setTimeout(()=>{ const s=$("nSaved"); if(s) s.textContent="Saved"; },600); };
+  title.oninput=()=>{ n.title=title.value; touch(); };
+  body.oninput=()=>{ n.body=body.value; touch(); };
+  body.onkeydown=e=>editorKeys(e,body);
+  $("nCourse").onchange=e=>{ n.courseId=e.target.value||null; n.sectionId=null; touch(); render(true); };
+  if($("nSec")) $("nSec").onchange=e=>{ n.sectionId=e.target.value==="upl"?null:e.target.value; touch(); };
+  const showRead=()=>{ $("nRead").innerHTML=md(n.body)||'<p class="muted">Nothing here yet.</p>'; };
+  if(mode==="read") showRead();
+  VIEW.showRead=showRead;
+  if(m) renderViewer($("vPane"),m,{compact:true});
+  if(mode==="edit"&&!n.body) title.value?body.focus():title.focus();
+}
+function setMode(mode){
+  const r=$("nRead"), b=$("nBody"); if(!r) return;
+  document.querySelectorAll('[data-act="mode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===mode));
+  r.hidden=mode!=="read"; b.hidden=mode==="read";
+  if(mode==="read") VIEW.showRead(); else b.focus();
+  history.replaceState(null,"",`#/n/${VIEW.id}${mode==="read"?"?view=read":""}`); VIEW.q=new URLSearchParams(mode==="read"?"view=read":"");
+}
+function editorKeys(e,ta){
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey){ if(e.key==="b"){ e.preventDefault(); fmt("b"); } else if(e.key==="i"){ e.preventDefault(); fmt("i"); } return; }
+  if(e.key==="Enter"&&!e.shiftKey){
+    const s=ta.selectionStart, v=ta.value, ls=v.lastIndexOf("\n",s-1)+1, line=v.slice(ls,s), m=/^(\s*)([-*]\s\[[ xX]\]\s|[-*•]\s|(\d+)[.)]\s|>\s?)/.exec(line);
+    if(!m||s!==ta.selectionEnd) return;
+    e.preventDefault();
+    if(line.trim()===m[0].trim()){ ta.setRangeText("",ls,s,"end"); }
+    else { let mk=m[2]; if(m[3]) mk=(+m[3]+1)+mk.slice(m[3].length); if(/\[[xX]\]/.test(mk)) mk=mk.replace(/\[[xX]\]/,"[ ]"); ta.setRangeText("\n"+m[1]+mk,s,s,"end"); }
+    ta.dispatchEvent(new Event("input"));
+  }
+  if(e.key==="Tab"&&/^\s*([-*•]|\d+[.)])\s/.test(ta.value.slice(ta.value.lastIndexOf("\n",ta.selectionStart-1)+1))){
+    e.preventDefault(); const ls=ta.value.lastIndexOf("\n",ta.selectionStart-1)+1, pos=ta.selectionStart;
+    if(e.shiftKey){ if(ta.value.slice(ls,ls+2)==="  "){ ta.setRangeText("",ls,ls+2,"preserve"); ta.selectionStart=ta.selectionEnd=Math.max(ls,pos-2); } }
+    else { ta.setRangeText("  ",ls,ls,"preserve"); ta.selectionStart=ta.selectionEnd=pos+2; }
+    ta.dispatchEvent(new Event("input"));
+  }
+}
+function fmt(k){
+  const ta=$("nBody"); if(!ta||ta.hidden) return;
+  const s=ta.selectionStart, e=ta.selectionEnd, v=ta.value, sel=v.slice(s,e);
+  const wrap=(a,b,ph)=>{ const t=sel||ph; ta.setRangeText(a+t+b,s,e,"select"); ta.selectionStart=s+a.length; ta.selectionEnd=s+a.length+t.length; };
+  const prefix=p=>{ const ls=v.lastIndexOf("\n",s-1)+1, le=v.indexOf("\n",e), end=le<0?v.length:le, block=v.slice(ls,end).split("\n").map(l=>l.startsWith(p)?l.slice(p.length):p+l).join("\n"); ta.setRangeText(block,ls,end,"end"); };
+  if(k==="b") wrap("**","**","bold"); else if(k==="i") wrap("*","*","italic"); else if(k==="hl") wrap("==","==","important");
+  else if(k==="h") prefix("## "); else if(k==="ul") prefix("- "); else if(k==="task") prefix("- [ ] "); else if(k==="q") prefix("> ");
+  else if(k==="term"){ const ls=v.lastIndexOf("\n",s-1)+1; ta.setRangeText((s>ls&&v.slice(ls,s).trim()?"\n":"")+"- "+(sel||"Term")+" - definition",s,e,"end"); }
+  ta.focus(); ta.dispatchEvent(new Event("input"));
+}
+
+function materialView(){
+  const m=ST.materials[VIEW.id]; if(!m){ main.innerHTML=`<p class="empty">That file isn't here any more. <a href="#/">Go home</a></p>`; return; }
+  const c=ST.courses[m.courseId], ns=notesFor(m.id), secs=c?sectionsOf(c):[];
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span>${c?`<a href="#/c/${c.id}/materials">${esc(c.name)}</a><span>›</span>`:""}</div>
+    <div class="sec-top"><h2 style="overflow-wrap:anywhere;min-width:0">${esc(m.name)}</h2>
+      <span class="btnrow">${ns.length?ns.map(n=>`<a class="btn small primary" href="#/n/${n.id}">${IC.note}${esc(trimTo(n.title||"Notes",30))}</a>`).join(""):""}<button class="btn small ${ns.length?"":"primary"}" data-act="takeNotes" data-id="${m.id}" data-new="1">${IC.note}${ns.length?"New note":"Take notes"}</button>
+      <span class="menu"><button class="btn small" data-act="matMenu" aria-expanded="false">File options</button><div class="menu-pop" id="mMenu" hidden>
+        <label>Type<select class="in" id="mKind">${KIND_ORDER.map(k=>`<option value="${k}" ${m.kind===k?"selected":""}>${KINDS[k]}</option>`).join("")}</select></label>
+        ${c?`<label>Week or topic<select class="in" id="mSec">${secs.map(s=>`<option value="${s.id}" ${(m.sectionId||"upl")===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></label>`:""}
+        ${m.source==="upload"||m.gone?`<button class="btn small danger" data-act="delMat" data-id="${m.id}">Delete file</button>`:""}</div></span></span></div>
+    <section class="card" id="vPane"></section>`;
+  renderViewer($("vPane"),m,{});
+  const k=$("mKind"); if(k) k.onchange=()=>{ m.kind=k.value; m.kindSet=true; save(); toast("Filed under "+KINDS[m.kind]); };
+  const s=$("mSec"); if(s) s.onchange=()=>{ m.sectionId=s.value==="upl"?null:s.value; m.sectionSet=true; save(); toast("Moved"); };
+}
+
+async function renderViewer(el,m,opts){
+  const t=TEXT[m.id], ext=extOf(m.file||""), canFetch=m.type==="file"&&m.fileurl&&ST.moodle;
+  const top=`<div class="viewer-top"><span class="chips"><span class="kind ${m.kind}" style="width:28px;height:28px">${IC[m.kind]}</span>${opts.compact?`<a href="#/m/${m.id}"><b>${esc(trimTo(m.name,60))}</b></a>`:`<span class="tag">${esc(KINDS[m.kind])}</span>`}</span>
+    <span class="btnrow">${m.status==="saved"&&m.type==="file"&&!m.noFile?`<button class="btn small" data-act="openFile" data-id="${m.id}">Open file</button>`:""}${m.moodleUrl?`<a class="btn small" href="${esc(m.moodleUrl)}" target="_blank" rel="noopener">Moodle</a>`:""}</span></div>`;
+  if(m.type==="link"){ el.innerHTML=top+`<p>This is a link to <a href="${esc(m.href)}" target="_blank" rel="noopener">${esc(m.href)}</a></p>`; return; }
+  if(m.status!=="saved"&&m.status!=="stale"&&!t){
+    el.innerHTML=top+`<div class="empty"><p>${m.dlFailed?esc(m.dlFailed):"This file is still on Moodle."}</p>
+      <div class="btnrow">${canFetch?`<button class="btn primary small" data-act="dl" data-id="${m.id}">Download now</button>`:""}<button class="btn small" data-act="attach" data-id="${m.id}">Choose the file from your device</button></div>
+      <p class="hint">If the download doesn't work, open it on Moodle, save it, then choose it here. It stays filed in the same place.</p><input type="file" id="attachIn" class="vh" tabindex="-1" aria-hidden="true"></div>`;
+    return;
+  }
+  el.innerHTML=top+`<div id="vBody"><p class="hint">Opening…</p></div>`+(m.status==="stale"&&canFetch?`<p class="hint">There's a newer version on Moodle. <button class="link" data-act="dl" data-id="${m.id}">Get it</button></p>`:"");
+  const vb=el.querySelector("#vBody");
+  if(m.type==="page"||(t&&t.html)){ vb.innerHTML=`<div class="html-body">${t?.html||""}</div>`; return; }
+  let blob=null; try{ blob=m.noFile?null:await DB.get("files",m.id); }catch(e){}
+  if(!vb.isConnected) return;
+  if(blob&&(ext==="pdf"||/pdf/.test(blob.type))){ await pdfView(vb,blob); return; }
+  if(blob&&/^image\//.test(blob.type||m.mime)){ const u=URL.createObjectURL(blob); vb.innerHTML=`<img src="${u}" alt="${esc(m.name)}" style="max-width:100%;border-radius:10px">`; viewerCleanup=()=>URL.revokeObjectURL(u); return; }
+  if(t&&t.slides){ vb.innerHTML=`<div class="pages">${t.slides.map(s=>`<div class="slide" id="pg-${s.n}"><span class="sn">Slide ${s.n}</span>${s.title?`<b>${esc(s.title)}</b>`:""}${s.lines.length?`<ul>${s.lines.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}${s.notes?`<div class="spk">${esc(s.notes)}</div>`:""}</div>`).join("")}</div>`; return; }
+  if(t&&t.md){ vb.innerHTML=`<div class="md solo">${md(t.md)}</div>`; return; }
+  if(t&&t.text){ vb.innerHTML=`<div class="md solo" style="white-space:pre-wrap">${esc(t.text)}</div>`; return; }
+  vb.innerHTML=`<div class="empty"><p>${m.readErr?esc(m.readErr):`This ${ext?ext.toUpperCase()+" ":""}file can't be shown here${["ppt","doc","key"].includes(ext)?" (older Office formats can't be read in the browser; save it as .pptx/.docx or PDF)":""}.`}</p>${blob?`<button class="btn small" data-act="openFile" data-id="${m.id}">Open file</button>`:""}</div>`;
+}
+async function pdfView(vb,blob){
+  let pdf; try{ const lib=await pdfjs(); pdf=await lib.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false}).promise; }
+  catch(e){ vb.innerHTML=`<p class="err">${esc(e.message||"Couldn't open this PDF.")}</p>`; return; }
+  if(!vb.isConnected) return;
+  const first=await pdf.getPage(1), vp=first.getViewport({scale:1});
+  vb.innerHTML=`<div class="pages">${Array.from({length:pdf.numPages},(_,i)=>`<div class="page" id="pg-${i+1}" data-p="${i+1}" style="aspect-ratio:${vp.width}/${vp.height}"><span class="pn">${i+1}</span></div>`).join("")}</div>`;
+  const io=new IntersectionObserver(es=>es.forEach(async en=>{
+    if(!en.isIntersecting||en.target.dataset.done) return; en.target.dataset.done=1; io.unobserve(en.target);
+    const page=await pdf.getPage(+en.target.dataset.p), w=en.target.clientWidth||600, scale=w/page.getViewport({scale:1}).width*Math.min(2,devicePixelRatio||1);
+    const v=page.getViewport({scale}), cv=document.createElement("canvas"); cv.width=v.width; cv.height=v.height;
+    en.target.prepend(cv); await page.render({canvasContext:cv.getContext("2d"),viewport:v}).promise;
+  }),{rootMargin:"600px 0px"});
+  vb.querySelectorAll(".page").forEach(p=>io.observe(p));
+  viewerCleanup=()=>{ io.disconnect(); pdf.destroy(); };
+}
+async function openFile(m){
+  const blob=await DB.get("files",m.id); if(!blob){ toast("That file isn't saved on this device."); return; }
+  const u=URL.createObjectURL(blob.type?blob:new Blob([blob],{type:m.mime||"application/octet-stream"}));
+  const a=document.createElement("a"); a.href=u; a.target="_blank"; a.rel="noopener"; if(!/pdf|image|text/.test(blob.type||m.mime)) a.download=m.file||m.name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),60000);
+}
+
+/* ---------- Connect ---------- */
+function connectView(){
+  const m=ST.moodle, s=ST.settings;
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div>
+  ${m?`<section class="card"><div class="sec-top"><h2>Moodle</h2><span class="tag good">Connected</span></div>
+      <p style="margin:0">Signed in to <b>${esc(m.sitename||m.site)}</b> as <b>${esc(m.fullname||"you")}</b>.<br><span class="muted">${esc(m.site)} · last synced ${esc(ago(m.lastSync))}</span></p>
+      <div class="btnrow"><button class="btn primary" data-act="sync" ${SYNC.on?"disabled":""}>${IC.sync}Sync now</button><a class="btn" href="#/pick">Choose classes</a><button class="link danger" data-act="disconnect">Disconnect</button></div>
+      <p class="hint">Disconnecting signs this device out of Moodle. Your notes and downloaded files stay.</p></section>
+    <section class="card"><h3>Sorting and downloads</h3><div>
+      <label class="switch"><span><b>Download files automatically</b><small>Slides, PDFs and handouts are saved here so you can read them offline and search inside them</small></span><input type="checkbox" id="setDl" ${s.autoDownload?"checked":""}></label>
+      <label class="switch"><span><b>Skip files bigger than</b><small>Megabytes. Bigger files stay on Moodle until you open them</small></span><input type="number" class="in" id="setMax" min="1" max="500" value="${s.maxMB}"></label>
+      <label class="switch"><span><b>Start a note outline for each slide deck</b><small>One heading per slide with its main points, filed under the right week</small></span><input type="checkbox" id="setOut" ${s.autoOutline?"checked":""}></label>
+    </div></section>`
+  :`<section class="card"><h2>Connect Moodle</h2>
+    <p class="muted" style="margin:0">Use the same address and sign-in you use on the Moodle website. Recall Notes connects the way the official Moodle app does. Your password goes only to your school's Moodle and isn't stored.</p>
+    <form class="form" id="cForm">
+      <label>Moodle address<input class="in" id="cSite" placeholder="moodle.yourschool.edu" inputmode="url" autocomplete="url" required value="${esc(localStorage.getItem("rn-site")||"")}"></label>
+      <label>Username<input class="in" id="cUser" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label>Password<input class="in" id="cPass" type="password" autocomplete="current-password"></label>
+      <p class="err" id="cErr" role="alert" hidden></p>
+      <div class="btnrow"><button class="btn primary" id="cGo">Connect</button></div>
+    </form>
+    <details class="more" id="cMore"><summary>Other ways to connect (school single sign-on)</summary>
+      <p class="hint" style="margin-top:8px">If you sign in to Moodle through Microsoft, Google or another school login page, a password won't work here. Use your Moodle app key instead:</p>
+      <ol class="steps"><li>On the Moodle website, open your profile menu and choose <b>Preferences</b>, then <b>Security keys</b>.</li><li>Copy the key next to <b>Moodle mobile web service</b>. If there isn't one, open the official Moodle app once and sign in, then check again.</li><li>Paste it below along with the Moodle address above.</li></ol>
+      <div class="form" style="margin-top:10px"><label>Security key<input class="in" id="cTok" spellcheck="false" autocomplete="off" style="font-family:var(--mono)"></label><div class="btnrow"><button class="btn" id="cTokGo">Connect with key</button></div></div>
+      <p class="hint" style="margin-top:10px">Some schools turn off app access entirely. You can still make classes yourself and drop in slides you download from Moodle. They get sorted and outlined the same way.</p>
+    </details></section>`}`;
+  if(m){
+    $("setDl").onchange=e=>{ s.autoDownload=e.target.checked; save(); if(s.autoDownload&&!SYNC.on) syncAll(); };
+    $("setMax").onchange=e=>{ s.maxMB=Math.max(1,+e.target.value||40); save(); };
+    $("setOut").onchange=e=>{ s.autoOutline=e.target.checked; save(); };
+    return;
+  }
+  const err=msg=>{ $("cErr").hidden=!msg; $("cErr").textContent=msg||""; if(msg&&$("cMore")&&/single sign-on|turned off|block apps/.test(msg)) $("cMore").open=true; };
+  const go=async(btn,getToken)=>{
+    err(""); let site;
+    try{ site=normSite($("cSite").value); }catch(e){ err(e.message); return; }
+    const lbl=btn.textContent; btn.disabled=true; btn.textContent="Connecting…";
+    try{
+      const token=await getToken(site), info=await siteInfo(site,token);
+      try{ localStorage.setItem("rn-site",$("cSite").value.trim()); }catch(e){}
+      ST.moodle={...info,lastSync:0}; save(); location.hash="#/pick";
+    }catch(e){ err(e.message||String(e)); btn.disabled=false; btn.textContent=lbl; }
+  };
+  $("cForm").onsubmit=e=>{ e.preventDefault(); const u=$("cUser").value.trim(), p=$("cPass").value; if(!u||!p){ err("Enter your username and password, or use a security key below."); return; } go($("cGo"),site=>login(site,u,p)); };
+  $("cTokGo").onclick=()=>{ const t=$("cTok").value.trim(); if(!/^[a-f0-9]{16,64}$/i.test(t)){ err("That key doesn't look right. It's a long string of letters and numbers."); return; } go($("cTokGo"),async()=>t); };
+}
+async function pickView(){
+  if(!ST.moodle){ location.hash="#/connect"; return; }
+  main.innerHTML=`<section class="card"><h2>Which classes should come in?</h2><p class="hint">Loading your Moodle classes…</p></section>`;
+  let list;
+  try{ list=await listMoodleCourses(); }
+  catch(e){ main.innerHTML=`<section class="card"><h2>Couldn't load your classes</h2><p class="err">${esc(e.message)}</p><div class="btnrow"><button class="btn" data-act="repick">Try again</button><a class="btn" href="#/connect">Back</a></div></section>`; return; }
+  if(VIEW.name!=="pick") return;
+  const have=Object.fromEntries(Object.values(ST.courses).filter(c=>c.moodleId).map(c=>[c.moodleId,c]));
+  list.sort((a,b)=>(b.current-a.current)||a.name.localeCompare(b.name));
+  main.innerHTML=`<section class="card"><h2>Which classes should come in?</h2>
+    <p class="hint">Classes running now are ticked. Each class brings its slides, files, Moodle pages and assignments.</p>
+    ${list.length?`<div class="list">${list.map(c=>{ const on=have[c.id]?!have[c.id].archived:(c.current&&!c.ended); return `<label class="check"><input type="checkbox" value="${c.id}" ${on?"checked":""}><span><b>${esc(c.name)}</b><small>${esc(c.short)}${c.current?" · in progress":c.ended?" · ended":""}</small></span></label>`; }).join("")}</div>`:`<p class="empty">Moodle says you're not enrolled in any classes.</p>`}
+    <div class="btnrow"><button class="btn primary" id="pGo">Import and sync</button><a class="btn" href="#/">Cancel</a></div></section>`;
+  $("pGo").onclick=()=>{
+    const ids=[...main.querySelectorAll("input[type=checkbox]:checked")].map(x=>+x.value), only=[];
+    let i=Object.keys(ST.courses).length;
+    for(const mc of list){
+      const ex=have[mc.id];
+      if(ids.includes(mc.id)){
+        const c=ex||(ST.courses["c"+mc.id]={id:"c"+mc.id,moodleId:mc.id,color:COLORS[i++%COLORS.length],sections:[],order:i});
+        Object.assign(c,{name:ex?.renamed?c.name:mc.name,short:mc.short,archived:false,moodleUrl:`${ST.moodle.site}/course/view.php?id=${mc.id}`}); only.push(c.id);
+      } else if(ex) ex.archived=true;
+    }
+    save(); location.hash="#/"; syncAll(only);
+  };
+}
+function addCourseView(){
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div><section class="card"><h2>Add a class</h2>
+    <form class="form" id="aForm"><label>Class name<input class="in" id="aName" placeholder="e.g. BIO 110 · Cell Biology" required></label>
+    <label>Weeks or topics <small>Optional. One per line. Files and notes get filed under these.</small><textarea class="in" id="aSecs" rows="4" placeholder="Week 1&#10;Week 2&#10;Midterm review"></textarea></label>
+    <div class="btnrow"><button class="btn primary">Add class</button><a class="btn" href="#/">Cancel</a></div></form></section>`;
+  $("aName").focus();
+  $("aForm").onsubmit=e=>{ e.preventDefault(); const name=$("aName").value.trim(); if(!name) return;
+    const id="c"+uid(), n=Object.keys(ST.courses).length;
+    ST.courses[id]={id,name,color:COLORS[n%COLORS.length],order:n,sections:$("aSecs").value.split("\n").map(s=>s.trim()).filter(Boolean).map((s,i)=>({id:"s"+uid()+i,num:i,name:s}))};
+    save(); location.hash="#/c/"+id; };
+}
+function searchView(){
+  const q=(VIEW.q.get("q")||"").trim(), ql=q.toLowerCase();
+  if($("q").value!==q&&document.activeElement!==$("q")) $("q").value=q;
+  if(!q){ main.innerHTML=`<p class="empty">Type to search your notes, slides and assignments.</p>`; return; }
+  const terms=ql.split(/\s+/).filter(Boolean), hit=s=>{ s=(s||"").toLowerCase(); return terms.every(t=>s.includes(t)); };
+  const re=new RegExp("("+terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")","gi");
+  const hl=s=>esc(s).replace(re,"<mark>$1</mark>");
+  const snip=(text)=>{ const s=String(text||""), i=s.toLowerCase().indexOf(terms[0]); if(i<0) return ""; const a=Math.max(0,i-60); return (a?"…":"")+s.slice(a,i+120).replace(/\s+/g," ")+"…"; };
+  const notes=Object.values(ST.notes).filter(n=>hit(n.title+" "+n.body)).sort((a,b)=>b.updatedAt-a.updatedAt);
+  const mats=[]; for(const m of Object.values(ST.materials)){ const t=TEXT[m.id]; if(hit(m.name)){ mats.push({m,s:""}); continue; }
+    if(t&&t.slides){ const s=t.slides.find(s=>hit([s.title,...s.lines,s.notes].join(" "))); if(s){ mats.push({m,s:`${extOf(m.file)==="pdf"?"Page":"Slide"} ${s.n}: `+snip([s.title,...s.lines,s.notes].join(" ")),n:s.n}); continue; } }
+    if(t&&hit(t.text)) mats.push({m,s:snip(t.text)}); }
+  const asg=Object.values(ST.assignments).filter(a=>hit(a.name+" "+htmlText(a.intro||"")));
+  main.innerHTML=`<h2>Results for “${esc(q)}”</h2>
+    ${!notes.length&&!mats.length&&!asg.length?`<p class="empty">Nothing found.</p>`:""}
+    ${notes.length?`<section class="group"><h3>Notes<span class="muted" style="font-family:var(--mono);font-size:.8rem"> ${notes.length}</span></h3><div class="list">${notes.map(n=>`<div class="row"><span class="kind notes">${IC.note}</span><a class="row-open" href="#/n/${n.id}"><b>${hl(n.title||"Untitled note")}</b><small><span class="cdot" style="--c:${courseColor(n.courseId)}"></span>${esc(courseName(n.courseId))}</small><span class="snip">${hl(snip(plain(n.body))||trimTo(plain(n.body),120))}</span></a><div class="acts"></div></div>`).join("")}</div></section>`:""}
+    ${mats.length?`<section class="group"><h3>Slides & files<span class="muted" style="font-family:var(--mono);font-size:.8rem"> ${mats.length}</span></h3><div class="list">${mats.map(({m,s,n})=>`<div class="row"><span class="kind ${m.kind}">${IC[m.kind]}</span><a class="row-open" href="#/m/${m.id}${n?"?p="+n:""}"><b>${hl(m.name)}</b><small><span class="cdot" style="--c:${courseColor(m.courseId)}"></span>${esc(courseName(m.courseId))}</small>${s?`<span class="snip">${hl(s)}</span>`:""}</a><div class="acts"></div></div>`).join("")}</div></section>`:""}
+    ${asg.length?`<section class="group"><h3>Assignments</h3><div class="list">${asg.map(a=>assignRow(a,true)).join("")}</div></section>`:""}`;
+}
+
+/* ---------- Files dropped in by hand ---------- */
+function wireDrop(c){
+  const d=$("drop"), inp=$("fileIn"); if(!d) return;
+  inp.onchange=()=>{ addFiles(c,[...inp.files]); inp.value=""; };
+  d.ondragover=e=>{ e.preventDefault(); d.classList.add("over"); };
+  d.ondragleave=()=>d.classList.remove("over");
+  d.ondrop=e=>{ e.preventDefault(); d.classList.remove("over"); addFiles(c,[...e.dataTransfer.files]); };
+}
+async function addFiles(c,files){
+  if(!files.length) return;
+  let matched=0;
+  for(const f of files){
+    // Same file name as something still on Moodle? Fill that in instead of adding a copy
+    let m=Object.values(ST.materials).find(x=>x.courseId===c.id&&x.type==="file"&&x.status!=="saved"&&x.file&&x.file.toLowerCase()===f.name.toLowerCase());
+    if(m) matched++;
+    else { const week=guessSection(c,f.name); m={id:"u"+uid(),courseId:c.id,source:"upload",type:"file",name:f.name.replace(/\.[a-z0-9]{2,5}$/i,""),file:f.name,size:f.size,mime:f.type,addedAt:Date.now(),sectionId:week,kind:classify(f.name,f.name,"file"),status:"remote"}; ST.materials[m.id]=m; }
+    toast("Reading "+f.name+"…");
+    try{ await storeFile(m,f); }catch(e){ toast("Couldn't save "+f.name+": "+(e.message||e)); }
+  }
+  save(); render(); toast(`Added ${files.length} file${files.length===1?"":"s"}`+(matched?` (${matched} matched to Moodle)`:""));
+}
+function guessSection(c,name){
+  const n=/(?:week|wk|unit|module|topic|lec(?:ture)?|chapter|ch)[\s_-]*0*(\d{1,2})/i.exec(name); if(!n) return null;
+  const s=(c.sections||[]).find(s=>new RegExp(`\\b0*${n[1]}\\b`).test(s.name)||s.num===+n[1]);
+  return s?s.id:null;
+}
+
+/* ---------- Sample class ---------- */
+function demo(){
+  const id="cdemo", now=Date.now(), at=(d,h=23)=>{ const x=new Date(dayStart(now+d*DAY)); x.setHours(h,59); return x.getTime(); };
+  const secs=["General","Week 1 · Cells and membranes","Week 2 · DNA and replication","Week 3 · Cell division"].map((n,i)=>({id:"sd"+i,num:i,name:n}));
+  ST.courses[id]={id,name:"BIO 110 · Intro to Cell Biology (sample)",short:"BIO110",color:COLORS[2],order:-1,sections:secs};
+  const decks=[
+    ["sd1","Lecture 1 slides: The cell",[["The cell theory",["All living things are made of cells","The cell is the basic unit of life","Cells come from pre-existing cells"],"Mention Schleiden, Schwann and Virchow."],["Prokaryotes vs eukaryotes",["Prokaryote - no nucleus, DNA in a nucleoid","Eukaryote - DNA inside a membrane-bound nucleus","Both have ribosomes and a plasma membrane"],""],["Organelles",["Mitochondria - make ATP by cellular respiration","Ribosome - builds proteins","Golgi apparatus - packages and ships proteins"],""]]],
+    ["sd1","Lecture 2 slides: Membranes",[["Fluid mosaic model",["Phospholipid bilayer with embedded proteins","Hydrophobic tails face inward"],""],["Transport",["Diffusion - movement from high to low concentration","Osmosis - diffusion of water across a membrane","Active transport - uses ATP to move against a gradient"],"Quiz question likely here."]]],
+    ["sd2","Lecture 3 slides: DNA structure",[["Double helix",["Two antiparallel strands","Base pairs: A–T and G–C","Sugar-phosphate backbone"],""],["Replication",["Semi-conservative","Helicase - unwinds the double helix","DNA polymerase - adds nucleotides 5′ to 3′"],""]]],
+    ["sd3","Lecture 4 slides: Mitosis",[["The cell cycle",["Interphase: G1, S, G2","M phase: mitosis and cytokinesis"],""],["Phases of mitosis",["Prophase - chromosomes condense","Metaphase - chromosomes line up in the middle","Anaphase - sister chromatids pull apart","Telophase - nuclei re-form"],"Use PMAT to remember the order."]]]
+  ];
+  decks.forEach(([sec,name,sl],i)=>{ const mid="demo-s"+i; ST.materials[mid]={id:mid,courseId:id,source:"upload",type:"file",name,file:name.replace(/:.*/,"").replace(/\s+/g,"_")+".pptx",sectionId:sec,kind:"slides",status:"saved",noFile:true,pages:sl.length,addedAt:now};
+    putText(mid,{slides:sl.map(([t,l,n],k)=>({n:k+1,title:t,lines:l,notes:n}))}).then(()=>{ if(i<2) makeOutline(ST.materials[mid]); render(); }); });
+  ST.materials["demo-p"]={id:"demo-p",courseId:id,source:"upload",type:"page",name:"Syllabus and course policies",sectionId:"sd0",kind:"notes",status:"saved",addedAt:now};
+  putText("demo-p",{html:"<h3>Grading</h3><ul><li>Labs: 30%</li><li>Midterm: 30%</li><li>Final: 40%</li></ul><p>Office hours are Tuesdays 2–4pm.</p>",text:"Grading Labs 30% Midterm 30% Final 40% Office hours Tuesdays 2–4pm"});
+  ST.materials["demo-r"]={id:"demo-r",courseId:id,source:"upload",type:"file",name:"Reading: Chapter 4 summary",file:"ch4_summary.txt",sectionId:"sd2",kind:"reading",status:"saved",noFile:true,addedAt:now};
+  putText("demo-r",{text:"Chapter 4 covers the structure of DNA, including the work of Watson, Crick and Rosalind Franklin, and how DNA is copied before a cell divides."});
+  [["Lab 1 report: Microscopy",-3,true],["Problem set 2: Membrane transport",2,false],["Lab 2 report: DNA extraction",6,false],["Midterm exam",12,false]].forEach(([n,d,done],i)=>{
+    ST.assignments["ademo"+i]={id:"ademo"+i,courseId:id,name:n,due:at(d),done,intro:i===1?"<p>Answer questions 1–8 from the handout. Show your work.</p>":""}; });
+  save(); location.hash="#/c/"+id;
+}
+
+/* ---------- Flashcards ---------- */
+function toFlashcards(n){
+  const lines=n.body.split("\n").filter(l=>!/^\s*#/.test(l)&&!/^From \[\[/.test(l)).map(l=>l.replace(/^\s*>\s?/,"").replace(/\*\*|==|`/g,"").replace(/^\s*[-*•]\s+(\[[ xX]\]\s*)?/,"").trim())
+    .filter(l=>/\S\s+[-–—=:]\s+\S|\S:\s+\S|\t/.test(l)&&l.length<400);
+  if(lines.length<2){ toast("Write at least two “Term - definition” lines first."); return; }
+  try{ localStorage.setItem("recall-drill-handoff",JSON.stringify({name:n.title||"Notes",text:lines.join("\n"),at:Date.now()})); }catch(e){ toast("Couldn't hand the terms over."); return; }
+  flush().then(()=>location.href="index.html");
+}
+
+/* ---------- Clicks ---------- */
+document.addEventListener("click",async e=>{
+  const go=e.target.closest("[data-go]"); if(go){ location.hash=go.dataset.go; return; }
+  const sl=e.target.closest(".md h2[data-slide]"); if(sl){ const p=$("pg-"+sl.dataset.slide); if(p){ p.scrollIntoView({behavior:"smooth",block:"start"}); p.classList.remove("flash-hi"); void p.offsetWidth; p.classList.add("flash-hi"); } return; }
+  const fb=e.target.closest("[data-fmt]"); if(fb){ fmt(fb.dataset.fmt); return; }
+  const t=e.target.closest("[data-act]"); if(!t) { document.querySelectorAll(".menu-pop").forEach(p=>{ if(!p.contains(e.target)) p.hidden=true; }); return; }
+  const a=t.dataset.act, id=t.dataset.id;
+  if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
+  if(a==="sync") syncAll();
+  else if(a==="syncOne") syncAll([id]);
+  else if(a==="dismissSync"){ SYNC.err=null; SYNC.msg=null; syncLine(); }
+  else if(a==="demo") demo();
+  else if(a==="repick") pickView();
+  else if(a==="newNote"){ const cid=t.dataset.course||null, n=newNote({courseId:cid}); location.hash="#/n/"+n.id; }
+  else if(a==="takeNotes"){ const m=ST.materials[id], ns=notesFor(id); if(ns.length&&!t.dataset.new){ location.hash="#/n/"+ns[0].id; return; } makeOutline(m,true); }
+  else if(a==="mode") setMode(t.dataset.m);
+  else if(a==="delNote"){ const n=ST.notes[VIEW.id]; if(!confirm(`Delete “${n.title||"Untitled note"}”? This can't be undone.`)) return; delete ST.notes[n.id]; save(); location.hash=n.courseId?"#/c/"+n.courseId+"/notes":"#/"; }
+  else if(a==="toCards") toFlashcards(ST.notes[VIEW.id]);
+  else if(a==="exportNote"){ const n=ST.notes[VIEW.id], txt="# "+(n.title||"Untitled note")+"\n\n"+n.body.replace(/\[\[([a-z0-9-]+)\]\]/gi,(x,i)=>ST.materials[i]?.name||x), u=URL.createObjectURL(new Blob([txt],{type:"text/markdown"})), l=document.createElement("a"); l.href=u; l.download=(n.title||"note").replace(/[^\w\s-]+/g,"").trim().slice(0,60)+".md"; l.click(); setTimeout(()=>URL.revokeObjectURL(u),5000); }
+  else if(a==="assignDone"){ const x=ST.assignments[id]; x.done=t.checked; save(); setTimeout(render,250); }
+  else if(a==="assignNote"){ const x=ST.assignments[id]; const n=newNote({courseId:x.courseId,title:x.name,assignId:x.id,body:`Due ${fmtDue(x.due)}\n\n## What's asked\n${htmlText(x.intro||"").split("\n").filter(Boolean).map(l=>"- "+l).join("\n")||"- "}\n\n## Plan\n- [ ] \n`}); location.hash="#/n/"+n.id; }
+  else if(a==="addAssign"){ const name=prompt("Assignment name"); if(!name) return; const d=prompt("Due date (YYYY-MM-DD), or leave empty",""); const due=d&&!isNaN(new Date(d+"T23:59"))?new Date(d+"T23:59").getTime():0; const aid="a"+uid(); ST.assignments[aid]={id:aid,courseId:t.dataset.course,name:name.trim(),due,intro:""}; save(); render(); }
+  else if(a==="delAssign"){ if(!confirm("Delete this assignment?")) return; const x=ST.assignments[id]; delete ST.assignments[id]; save(); location.hash="#/c/"+x.courseId+"/assignments"; }
+  else if(a==="courseMenu"||a==="matMenu"){ const p=$(a==="courseMenu"?"cMenu":"mMenu"); p.hidden=!p.hidden; t.setAttribute("aria-expanded",!p.hidden); }
+  else if(a==="cColor"){ const c=ST.courses[VIEW.id]; c.color=t.dataset.c; save(); render(); }
+  else if(a==="archive"){ const c=ST.courses[id]; if(!confirm(`Remove “${c.name}” from this device? Its notes stay (with no class), its downloaded files are deleted.`)) return;
+    for(const m of Object.values(ST.materials)) if(m.courseId===id) await removeMaterial(m.id);
+    for(const x of Object.values(ST.assignments)) if(x.courseId===id) delete ST.assignments[x.id];
+    for(const n of Object.values(ST.notes)) if(n.courseId===id){ n.courseId=null; n.sectionId=null; }
+    if(c.moodleId) Object.assign(c,{archived:true,sections:[]}); else delete ST.courses[id];
+    save(); location.hash="#/"; }
+  else if(a==="pickFiles") $("fileIn").click();
+  else if(a==="openFile") openFile(ST.materials[id]);
+  else if(a==="dl"){ const m=ST.materials[id]; t.disabled=true; t.textContent="Downloading…"; try{ await downloadOne(m); toast("Saved"); }catch(err){ m.dlFailed=err.message; toast(err.message); } save(); render(true); }
+  else if(a==="attach"){ const inp=$("attachIn"); inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; const m=ST.materials[id]; m.file=m.file||f.name; try{ await storeFile(m,f); toast("Saved"); }catch(err){ toast(err.message); } render(true); }; inp.click(); }
+  else if(a==="delMat"){ if(!confirm("Delete this file from this device?")) return; const m=ST.materials[id]; await removeMaterial(id); save(); location.hash="#/c/"+m.courseId; }
+  else if(a==="disconnect"){ if(!confirm("Sign this device out of Moodle? Your notes and files stay.")) return; const m=ST.moodle; ST.moodle=null; save(); render(true); toast("Disconnected from "+(m.sitename||"Moodle")); }
+});
+document.addEventListener("change",e=>{
+  const cb=e.target.closest('.md input[type=checkbox][data-line]'); if(!cb) return;
+  const n=ST.notes[VIEW.id]; const ls=n.body.split("\n"), i=+cb.dataset.line;
+  ls[i]=ls[i].replace(/\[([ xX])\]/,cb.checked?"[x]":"[ ]"); n.body=ls.join("\n"); n.updatedAt=Date.now(); $("nBody").value=n.body; save();
+});
+let qT; $("q").oninput=e=>{ clearTimeout(qT); qT=setTimeout(()=>{ const v=e.target.value.trim(); if(v) history[VIEW.name==="search"?"replaceState":"pushState"](null,"","#/search?q="+encodeURIComponent(v)); else history.replaceState(null,"","#/"); route(); },200); };
+$("q").onkeydown=e=>{ if(e.key==="Escape"){ e.target.value=""; location.hash="#/"; } };
+
+/* ---------- Start ---------- */
+(async function boot(){
+  try{ ST=await DB.get("kv","state"); TEXT=await DB.all("text"); }
+  catch(e){ toast("This browser won't let the app store data, so notes will be lost when you close it."); }
+  ST=Object.assign(blank(),ST||{}); ST.settings=Object.assign(blank().settings,ST.settings||{});
+  try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+  route(); syncLine();
+  // Pick up anything new from Moodle every few hours, when the app is opened
+  if(ST.moodle&&navigator.onLine&&Date.now()-(ST.moodle.lastSync||0)>3*3600e3) syncAll();
+  const sp=VIEW.q.get("p"); if(VIEW.name==="m"&&sp) setTimeout(()=>$("pg-"+sp)?.scrollIntoView(),400);
+})();
+window.addEventListener("hashchange",()=>{ const sp=VIEW.q.get("p"); if(VIEW.name==="m"&&sp){ const tryJump=(k)=>{ const el=$("pg-"+sp); if(el) el.scrollIntoView({block:"start"}); else if(k<20) setTimeout(()=>tryJump(k+1),150); }; tryJump(0); } });
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
+</script>
+</body></html>
