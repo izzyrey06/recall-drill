@@ -134,6 +134,18 @@ kbd{font-family:var(--mono);font-size:.72rem;padding:2px 6px;border-radius:6px;b
 .stat b{font-family:var(--display);font-size:1.7rem;font-weight:700;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
 .stat span{font-size:.82rem;color:var(--muted);font-weight:500}
 .stat.bad b{color:var(--bad)}
+a.stat{position:relative;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+a.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+a.stat:active{transform:translateY(0)}
+a.stat .go{position:absolute;right:12px;top:14px;width:18px;height:18px;color:var(--muted);opacity:.45;transition:opacity .15s,transform .15s}
+a.stat:hover .go{opacity:1;transform:translateX(2px);color:var(--accent)}
+a.stat.bad{border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.stat-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:700px){.stat-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat-tabs a.stat{padding:10px 14px}
+.stat-tabs a.stat b{font-size:1.25rem}
+.stat-tabs a.stat[aria-current="page"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-soft)}
+.stat-tabs a.stat[aria-current="page"] .go{display:none}
 .welcome{padding:28px;gap:18px;background:linear-gradient(135deg,var(--accent-soft),var(--surface) 60%)}
 .welcome h2{font-size:1.7rem}
 .feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none}
@@ -1032,7 +1044,7 @@ function render(nav){
   hdr();
   // Don't wipe a note while someone's typing in it
   const v=VIEW.name, y=nav?0:scrollY, ae=document.activeElement;
-  if(!nav&&ae&&main.contains(ae)&&ae.matches("input,textarea,select")) return;
+  if(!nav&&ae&&main.contains(ae)&&ae.matches("input:not([type=checkbox]):not([type=radio]),textarea,select")) return;
   if(!nav&&["n","m","pick","add","connect"].includes(v)&&!(v==="connect"&&ST.moodle)) return;
   if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
   if(v==="home") homeView();
@@ -1045,6 +1057,7 @@ function render(nav){
   else if(v==="add") addCourseView();
   else if(v==="cal") calView();
   else if(v==="scan") scanView();
+  else if(v==="all") allView();
   else homeView();
   if(nav) scrollTo(0,0); else scrollTo(0,y);
 }
@@ -1114,7 +1127,7 @@ function homeView(){
   const days=[]; for(const a of due){ const [l,cls]=dayLabel(a.due); let g=days.find(d=>d.l===l); if(!g) days.push(g={l,cls,items:[]}); g.items.push(a); }
   main.innerHTML=hero+`
     ${m?"":`<div class="statusline" style="margin:0"><span class="grow">Bring in your classes, slides and assignments automatically.</span><a class="btn small primary" href="#/connect">Connect Moodle</a></div>`}
-    <div class="stats"><div class="stat"><b>${week}</b><span>Due this week</span></div><div class="stat ${late?"bad":""}"><b>${late}</b><span>Overdue</span></div><div class="stat"><b>${decks}</b><span>Slide decks</span></div><div class="stat"><b>${Object.keys(ST.notes).length}</b><span>Notes</span></div></div>
+    <div class="stats"><a class="stat" href="#/all/week"><b>${week}</b><span>Due this week</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat ${late?"bad":""}" href="#/all/overdue"><b>${late}</b><span>Overdue</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/slides"><b>${decks}</b><span>Slide decks</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="stat" href="#/all/notes"><b>${Object.keys(ST.notes).length}</b><span>Notes</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></div>
     <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""} title="Last synced ${esc(ago(m.lastSync))}">${IC.sync}Sync</button>`:""}<a class="btn small" href="#/scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan a syllabus</a><a class="btn small" href="#/add">+ Add class</a></span></div>
       <div class="grid">${cs.map(courseCard).join("")}</div></section>
     <section class="group"><div class="group-h"><h2>Coming up</h2><a class="btn small" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Calendar</a></div>
@@ -1566,6 +1579,58 @@ function scanAction(a){
     for(const it of pick){ const id="s"+uid()+n++; ST.assignments[id]={id,courseId:cid,name:it.name.trim(),due:it.due,allDay:!!it.allDay,type:it.type,source:"syllabus",fromMat:st.mid||null,intro:""}; }
     save(); delete SCAN[cid]; toast(`Imported ${pick.length} item${pick.length===1?"":"s"}. They're in your calendar now.`); location.hash="#/c/"+cid+"/assignments";
   }
+}
+
+/* ---------- Lists behind the home page numbers ---------- */
+function allView(){
+  const kind=["week","overdue","slides","notes"].includes(VIEW.id)?VIEW.id:"week", now=Date.now(), cf=VIEW.q.get("c")||"", sort=VIEW.q.get("sort")||"";
+  const live=id=>!ST.courses[id]?.archived;
+  const open=Object.values(ST.assignments).filter(a=>live(a.courseId)&&!a.done&&!a.submitted&&a.due);
+  const sets={
+    week:open.filter(a=>a.due>=now&&a.due<now+7*DAY).sort((a,b)=>a.due-b.due),
+    overdue:open.filter(a=>a.due<now).sort((a,b)=>a.due-b.due),
+    slides:Object.values(ST.materials).filter(m=>m.kind==="slides"&&!m.gone&&live(m.courseId)),
+    notes:Object.values(ST.notes)
+  };
+  const TITLES={week:"Due this week",overdue:"Overdue",slides:"Slide decks",notes:"Notes"};
+  const q=o=>{ const p=new URLSearchParams({...(cf?{c:cf}:{}),...(sort?{sort}:{}),...o}); for(const [k,v] of [...p]) if(!v) p.delete(k); const s=p.toString(); return `#/all/${kind}${s?"?"+s:""}`; };
+  let items=sets[kind].filter(x=>!cf||x.courseId===cf);
+  const cids=[...new Set(sets[kind].map(x=>x.courseId).filter(Boolean))];
+  const chips=cids.length>1?`<div class="chips" role="group" aria-label="Class"><a class="chip" href="${q({c:""})}" aria-pressed="${!cf}">All classes <span>${sets[kind].length}</span></a>${cids.map(id=>`<a class="chip" href="${q({c:id})}" aria-pressed="${cf===id}"><span class="cdot" style="--c:${courseColor(id)}"></span>${esc(trimTo(courseName(id),32))} <span>${sets[kind].filter(x=>x.courseId===id).length}</span></a>`).join("")}</div>`:"";
+  let body="";
+  if(kind==="week"||kind==="overdue"){
+    if(!items.length) body=`<p class="empty">${kind==="week"?"Nothing due in the next 7 days.":"Nothing overdue. Nice work."} 🎉</p>`;
+    else {
+      const days=[]; for(const a of items){ const [l,cls]=kind==="overdue"?[(()=>{ const d=Math.round((dayStart(now)-dayStart(a.due))/DAY); return d===0?"Earlier today":d===1?"Yesterday":d+" days ago"; })(),"late"]:dayLabel(a.due); let g=days.find(d=>d.l===l); if(!g) days.push(g={l,cls,items:[]}); g.items.push(a); }
+      body=days.map(d=>`<div class="day"><div class="day-h ${d.cls}">${esc(d.l)}</div><div class="list">${d.items.map(a=>assignRow(a,true)).join("")}</div></div>`).join("")
+        +`<p class="hint">Tick an item to mark it done. Assignments submitted on Moodle drop off by themselves after the next sync.</p>`;
+    }
+  } else if(kind==="slides"){
+    const s=sort||"week";
+    items.sort(s==="az"?(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}):s==="new"?(a,b)=>(b.mtime||b.addedAt||0)-(a.mtime||a.addedAt||0):(a,b)=>courseName(a.courseId).localeCompare(courseName(b.courseId))||secNum(a)-secNum(b)||a.name.localeCompare(b.name,undefined,{numeric:true}));
+    const sortBar=`<span class="seg" role="group" aria-label="Sort"><button data-go="${q({sort:"week"})}" aria-pressed="${s==="week"}">By class</button><button data-go="${q({sort:"new"})}" aria-pressed="${s==="new"}">Newest</button><button data-go="${q({sort:"az"})}" aria-pressed="${s==="az"}">A–Z</button></span>`;
+    const withNotes=items.filter(m=>notesFor(m.id).length).length;
+    body=`<div class="sec-top"><span class="hint">${withNotes} of ${items.length} have notes</span>${sortBar}</div>`+
+      (items.length?(s==="week"?groupBy(items,m=>m.courseId).map(([cid,ms])=>`<section class="group"><div class="group-h"><h3><span class="cdot" style="--c:${courseColor(cid)};margin-right:8px;margin-left:0"></span>${esc(courseName(cid))}<span>${ms.length}</span></h3></div><div class="list">${ms.map(m=>matRowWithWeek(m)).join("")}</div></section>`).join("")
+        :`<div class="list">${items.map(m=>matRowWithWeek(m,true)).join("")}</div>`)
+      :`<p class="empty">No slide decks yet.</p>`);
+  } else {
+    const s=sort||"recent";
+    items.sort(s==="az"?(a,b)=>(a.title||"").localeCompare(b.title||"",undefined,{numeric:true}):s==="created"?(a,b)=>b.createdAt-a.createdAt:(a,b)=>b.updatedAt-a.updatedAt);
+    body=`<div class="sec-top"><button class="btn small" data-act="newNote" ${cf?`data-course="${cf}"`:""}>+ New note</button><span class="seg" role="group" aria-label="Sort"><button data-go="${q({sort:"recent"})}" aria-pressed="${s==="recent"}">Recently edited</button><button data-go="${q({sort:"created"})}" aria-pressed="${s==="created"}">Newest</button><button data-go="${q({sort:"az"})}" aria-pressed="${s==="az"}">A–Z</button></span></div>`+
+      (items.length?`<div class="note-grid">${items.map(noteCard).join("")}</div>`:`<p class="empty">No notes yet.</p>`);
+  }
+  const tabs=["week","overdue","slides","notes"].map(k=>`<a class="stat${k==="overdue"&&sets.overdue.length?" bad":""}" href="#/all/${k}" ${k===kind?'aria-current="page"':""}><b>${sets[k].length}</b><span>${TITLES[k]}</span></a>`).join("");
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span></div>
+    <div class="stat-tabs" role="navigation" aria-label="Lists">${tabs}</div>
+    <h2>${TITLES[kind]}${cf?` <span class="muted" style="font-weight:500">· ${esc(courseName(cf))}</span>`:""}</h2>
+    ${chips}${body}`;
+}
+function groupBy(arr,f){ const m=new Map(); for(const x of arr){ const k=f(x); if(!m.has(k)) m.set(k,[]); m.get(k).push(x); } return [...m]; }
+function secNum(m){ const c=ST.courses[m.courseId], s=c&&(c.sections||[]).find(x=>x.id===m.sectionId); return s?s.num:9999; }
+function matRowWithWeek(m,showCourse){
+  const c=ST.courses[m.courseId], s=c&&(c.sections||[]).find(x=>x.id===m.sectionId);
+  return matRow(m).replace('<small>',`<small>${showCourse?`<span class="cc"><span class="cdot" style="--c:${courseColor(m.courseId)}"></span>${esc(trimTo(courseName(m.courseId),30))}</span>`:""}${s?`<span>${esc(trimTo(s.name,36))}</span>`:""}`);
 }
 
 /* ---------- Connect ---------- */
