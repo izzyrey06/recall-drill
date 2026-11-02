@@ -340,6 +340,19 @@ mark{background:color-mix(in srgb,var(--mark) 40%,transparent);color:inherit;bor
 .up-date{width:42px;height:44px;border-radius:10px;display:grid;place-items:center;align-content:center;flex:none;background:color-mix(in srgb,var(--c) 14%,transparent);line-height:1.05}
 .up-date b{font-family:var(--display);font-size:1.05rem;color:var(--c)} .up-date small{font-size:.66rem;font-weight:700;text-transform:uppercase;color:var(--muted)}
 .up-txt{display:grid;min-width:0} .up-txt b{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .up-txt small{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Syllabus scanner ---------- */
+.scan-src{gap:16px;max-width:760px}
+.scan-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cb-all{display:flex;gap:8px;align-items:center;font-weight:600;font-size:.88rem;cursor:pointer}
+.ck2{accent-color:var(--accent);width:18px;height:18px;margin:0;flex:none}
+.scan-list{display:grid;gap:8px}
+.scan-row{display:grid;grid-template-columns:auto 128px minmax(0,1fr) 150px 116px;gap:8px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);transition:opacity .15s}
+.scan-row.off{opacity:.5}
+.scan-row .in.sm{padding:7px 9px;font-size:.88rem;border-radius:9px}
+.scan-src-line{grid-column:2/-1;font-size:.78rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.scan-src-line>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+@media (max-width:760px){.scan-row{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}.scan-row [data-f=name]{grid-column:2/-1;grid-row:1}.scan-row [data-f=type]{grid-column:2/-1}.scan-row [data-f=date]{grid-column:2}.scan-row [data-f=time]{grid-column:3}.scan-src-line>span:last-child{white-space:normal}}
 </style>
 </head><body><div class="app">
   <aside class="side" id="side" aria-label="Navigation">
@@ -381,10 +394,10 @@ const fmtSize=b=>!b?"":b<1024?b+" B":b<1048576?Math.round(b/1024)+" KB":(b/10485
 function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
 const dayStart=t=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
-function fmtDue(t){
+function fmtDue(t,allDay){
   if(!t) return "No due date";
   const d=new Date(t), days=Math.round((dayStart(t)-dayStart(Date.now()))/DAY);
-  const time=d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  const time=allDay?"":d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
   if(days===0) return "Today "+time; if(days===1) return "Tomorrow "+time; if(days===-1) return "Yesterday "+time;
   if(days>1&&days<7) return d.toLocaleDateString([], {weekday:"short"})+" "+time;
   return d.toLocaleDateString([], {month:"short",day:"numeric",year:d.getFullYear()!==new Date().getFullYear()?"numeric":undefined})+" "+time;
@@ -784,7 +797,7 @@ function cleanHtml(html){
   } };
   walk(doc.body); return doc.body.innerHTML.trim();
 }
-function htmlText(html){ const d=new DOMParser().parseFromString(String(html),"text/html"); d.querySelectorAll("script,style").forEach(x=>x.remove()); d.querySelectorAll("br,p,li,h1,h2,h3,h4,div,tr").forEach(x=>x.append("\n")); return (d.body.textContent||"").replace(/[ \t\u00a0]+/g," ").replace(/\n\s*\n+/g,"\n").trim(); }
+function htmlText(html){ const d=new DOMParser().parseFromString(String(html),"text/html"); d.querySelectorAll("script,style").forEach(x=>x.remove()); d.querySelectorAll("td,th").forEach(x=>x.append(" | ")); d.querySelectorAll("br,p,li,h1,h2,h3,h4,div,tr").forEach(x=>x.append("\n")); return (d.body.textContent||"").replace(/[ \t\u00a0]+/g," ").replace(/\n\s*\n+/g,"\n").trim(); }
 
 /* ============ Notes: outlines made from slides ============ */
 function makeOutline(m,open){
@@ -851,7 +864,7 @@ function route(){
   if(viewerCleanup){ viewerCleanup(); viewerCleanup=null; }
   const h=decodeURI(location.hash.slice(1)||"/"), [path,qs]=h.split("?"), p=path.split("/").filter(Boolean), q=new URLSearchParams(qs||"");
   VIEW={name:p[0]||"home",id:p[1],tab:p[2],q};
-  main.classList.toggle("wide",VIEW.name==="n"||VIEW.name==="cal"); document.body.classList.remove("nav-open");
+  main.classList.toggle("wide",VIEW.name==="n"||VIEW.name==="cal"||VIEW.name==="scan"); document.body.classList.remove("nav-open");
   render(true);
   if(VIEW.name!=="search"&&document.activeElement!==$("q")) $("q").value="";
 }
@@ -874,6 +887,7 @@ function render(nav){
   else if(v==="search") searchView();
   else if(v==="add") addCourseView();
   else if(v==="cal") calView();
+  else if(v==="scan") scanView();
   else homeView();
   if(nav) scrollTo(0,0); else scrollTo(0,y);
 }
@@ -886,7 +900,7 @@ function assignRow(a,showCourse){
   return `<div class="row${fin?" done-row":""}" style="--c:${courseColor(a.courseId)}">
     <input type="checkbox" class="ck" data-act="assignDone" data-id="${a.id}" ${fin?"checked":""} ${a.submitted?"disabled title=\"Submitted on Moodle\"":`aria-label="Mark ${esc(a.name)} done"`}>
     <a class="row-open" href="#/c/${a.courseId}/assignments?a=${a.id}"><b>${esc(a.name)}</b><small>${showCourse?`<span class="cc"><span class="cdot"></span>${esc(courseName(a.courseId))}</span>`:""}
-      <span class="due">${esc(fmtDue(a.due))}</span>${a.submitted?'<span class="tag good">Submitted</span>':a.done?'<span class="tag good">Done</span>':late?'<span class="tag bad">Overdue</span>':soon?'<span class="tag warn">Due soon</span>':""}${a.grade?`<span class="tag acc">Grade ${esc(a.grade)}</span>`:""}</small></a>
+      <span class="due">${esc(fmtDue(a.due,a.allDay).trim())}</span>${a.type&&a.type!=="assignment"?`<span class="tag acc">${esc(TYPE_LABEL[a.type]||a.type)}</span>`:""}${a.submitted?'<span class="tag good">Submitted</span>':a.done?'<span class="tag good">Done</span>':late?'<span class="tag bad">Overdue</span>':soon?'<span class="tag warn">Due soon</span>':""}${a.grade?`<span class="tag acc">Grade ${esc(a.grade)}</span>`:""}</small></a>
     <div class="acts">${n?`<a class="btn small" href="#/n/${n.id}">${IC.note}Notes</a>`:`<button class="btn small" data-act="assignNote" data-id="${a.id}">${IC.note}Plan it</button>`}${a.url?`<a class="btn small" href="${esc(a.url)}" target="_blank" rel="noopener">Moodle</a>`:""}</div></div>`;
 }
 function noteRow(n,showCourse){
@@ -903,7 +917,7 @@ function matRow(m){
     : m.dlFailed?`<span class="tag bad" title="${esc(m.dlFailed)}">Not downloaded</span>`:`<span class="tag">On Moodle</span>`;
   return `<div class="row"><span class="kind ${m.kind}">${IC[m.kind]||IC.other}</span>
     <a class="row-open" href="#/m/${m.id}"><b>${esc(m.name)}</b><small>${m.type==="page"?"<span>Moodle page</span>":ext?`<span>${ext.toUpperCase()}</span>`:""}${m.size&&m.type==="file"?`<span>${fmtSize(m.size)}</span>`:""}${m.pages?`<span>${m.pages} ${extOf(m.file)==="pdf"?"pages":"slides"}</span>`:""}${st}${m.gone?'<span class="tag">Removed from Moodle</span>':""}${m.group&&m.group!==m.name?`<span>in ${esc(trimTo(m.group,40))}</span>`:""}</small></a>
-    <div class="acts">${m.type==="link"?`<a class="btn small" href="${esc(m.href)}" target="_blank" rel="noopener">Open</a>`:""}${ns.length?`<a class="btn small" href="#/n/${ns[0].id}">${IC.note}Notes${ns.length>1?" ("+ns.length+")":""}</a>`:m.type!=="link"?`<button class="btn small" data-act="takeNotes" data-id="${m.id}">${IC.note}Take notes</button>`:""}</div></div>`;
+    <div class="acts">${SYL_RE.test(m.name+" "+(m.file||""))&&(TEXT[m.id]?.text||TEXT[m.id]?.html)?`<a class="btn small" href="#/scan/${m.courseId}?m=${m.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan</a>`:""}${m.type==="link"?`<a class="btn small" href="${esc(m.href)}" target="_blank" rel="noopener">Open</a>`:""}${ns.length?`<a class="btn small" href="#/n/${ns[0].id}">${IC.note}Notes${ns.length>1?" ("+ns.length+")":""}</a>`:m.type!=="link"?`<button class="btn small" data-act="takeNotes" data-id="${m.id}">${IC.note}Take notes</button>`:""}</div></div>`;
 }
 
 function abbr(c){ if(c.short&&c.short.length<=14) return c.short; const w=c.name.replace(/\(.*?\)/g,"").split(/[\s·:-]+/).filter(Boolean); return (w.length>1?w.slice(0,3).map(x=>x[0]).join(""):c.name.slice(0,4)).toUpperCase(); }
@@ -944,7 +958,7 @@ function homeView(){
   main.innerHTML=hero+`
     ${m?"":`<div class="statusline" style="margin:0"><span class="grow">Bring in your classes, slides and assignments automatically.</span><a class="btn small primary" href="#/connect">Connect Moodle</a></div>`}
     <div class="stats"><div class="stat"><b>${week}</b><span>Due this week</span></div><div class="stat ${late?"bad":""}"><b>${late}</b><span>Overdue</span></div><div class="stat"><b>${decks}</b><span>Slide decks</span></div><div class="stat"><b>${Object.keys(ST.notes).length}</b><span>Notes</span></div></div>
-    <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""} title="Last synced ${esc(ago(m.lastSync))}">${IC.sync}Sync</button>`:""}<a class="btn small" href="#/add">+ Add class</a></span></div>
+    <section class="group"><div class="group-h"><h2>Classes</h2><span class="btnrow">${m?`<button class="btn small" data-act="sync" ${SYNC.on?"disabled":""} title="Last synced ${esc(ago(m.lastSync))}">${IC.sync}Sync</button>`:""}<a class="btn small" href="#/scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan a syllabus</a><a class="btn small" href="#/add">+ Add class</a></span></div>
       <div class="grid">${cs.map(courseCard).join("")}</div></section>
     <section class="group"><div class="group-h"><h2>Coming up</h2><a class="btn small" href="#/cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Calendar</a></div>
       ${days.length?days.map(d=>`<div class="day"><div class="day-h ${d.cls}">${esc(d.l)}</div><div class="list">${d.items.map(a=>assignRow(a,true)).join("")}</div></div>`).join("")
@@ -984,7 +998,7 @@ function courseView(){
     const up=asg.filter(a=>!a.due||a.due>=now-DAY||(!a.done&&!a.submitted)).sort((a,b)=>(a.due||9e15)-(b.due||9e15)), past=asg.filter(a=>!up.includes(a)).sort((a,b)=>b.due-a.due);
     const one=sel&&ST.assignments[sel];
     body=`${one?assignDetail(one):""}
-      <div class="btnrow"><button class="btn small" data-act="addAssign" data-course="${c.id}">+ Add assignment</button></div>
+      <div class="btnrow"><a class="btn small primary" href="#/scan/${c.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan syllabus</a><button class="btn small" data-act="addAssign" data-course="${c.id}">+ Add assignment</button><span class="hint">Pull assignments, quizzes and tests out of your syllabus.</span></div>
       ${asg.length?`<section class="group"><h3>Upcoming and open</h3>${up.length?`<div class="list">${up.map(a=>assignRow(a)).join("")}</div>`:`<p class="hint">All caught up.</p>`}</section>
       ${past.length?`<details class="group"><summary class="link" style="text-decoration:none">Finished and past (${past.length})</summary><div class="list" style="margin-top:8px">${past.map(a=>assignRow(a)).join("")}</div></details>`:""}`
         :`<p class="empty">No assignments yet.</p>`}`;
@@ -1009,7 +1023,7 @@ function sectionsOf(c){
 }
 function assignDetail(a){
   return `<section class="card" id="aDetail"><div class="sec-top"><h3>${esc(a.name)}</h3><a class="link" href="#/c/${a.courseId}/assignments">Close</a></div>
-    <div class="chips"><span class="tag ${a.due&&a.due<Date.now()&&!a.submitted&&!a.done?"bad":""}">Due ${esc(fmtDue(a.due))}</span>${a.cutoff?`<span class="tag">Closes ${esc(fmtDue(a.cutoff))}</span>`:""}${a.submitted?'<span class="tag good">Submitted</span>':""}</div>
+    <div class="chips"><span class="tag ${a.due&&a.due<Date.now()&&!a.submitted&&!a.done?"bad":""}">${a.type&&a.type!=="assignment"?esc(TYPE_LABEL[a.type]):"Due"} ${esc(fmtDue(a.due,a.allDay).trim())}</span>${a.cutoff?`<span class="tag">Closes ${esc(fmtDue(a.cutoff))}</span>`:""}${a.submitted?'<span class="tag good">Submitted</span>':""}</div>
     ${a.intro?`<div class="html-body">${a.intro}</div>`:a.moodleId?'<p class="hint">No instructions on Moodle.</p>':""}
     ${Object.values(ST.materials).filter(m=>m.assignId===a.id).map(matRow).join("")}
     ${!a.moodleId?`<div class="btnrow"><button class="link danger" data-act="delAssign" data-id="${a.id}">Delete assignment</button></div>`:""}</section>`;
@@ -1100,6 +1114,7 @@ function materialView(){
   main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span>${c?`<a href="#/c/${c.id}/materials">${esc(c.name)}</a><span>›</span>`:""}</div>
     <div class="sec-top"><h2 style="overflow-wrap:anywhere;min-width:0">${esc(m.name)}</h2>
       <span class="btnrow">${ns.length?ns.map(n=>`<a class="btn small primary" href="#/n/${n.id}">${IC.note}${esc(trimTo(n.title||"Notes",30))}</a>`).join(""):""}<button class="btn small ${ns.length?"":"primary"}" data-act="takeNotes" data-id="${m.id}" data-new="1">${IC.note}${ns.length?"New note":"Take notes"}</button>
+      ${c&&m.type!=="link"&&(TEXT[m.id]?.text||TEXT[m.id]?.html)?`<a class="btn small" href="#/scan/${c.id}?m=${m.id}" title="Find dated assignments, quizzes and tests in this file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M4 12h16"/></svg>Scan for due dates</a>`:""}
       <span class="menu"><button class="btn small" data-act="matMenu" aria-expanded="false">File options</button><div class="menu-pop" id="mMenu" hidden>
         <label>Type<select class="in" id="mKind">${KIND_ORDER.map(k=>`<option value="${k}" ${m.kind===k?"selected":""}>${KINDS[k]}</option>`).join("")}</select></label>
         ${c?`<label>Week or topic<select class="in" id="mSec">${secs.map(s=>`<option value="${s.id}" ${(m.sectionId||"upl")===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></label>`:""}
@@ -1161,7 +1176,7 @@ const EV_LABEL={quiz:"Quiz",exam:"Exam",course:"Class event",user:"Personal",sit
 function calItems(){
   const out=[];
   for(const a of Object.values(ST.assignments)) if(a.due&&!ST.courses[a.courseId]?.archived)
-    out.push({t:a.due,title:a.name,courseId:a.courseId,kind:"assign",id:a.id,done:!!(a.done||a.submitted),a});
+    out.push({t:a.due,title:a.name,courseId:a.courseId,kind:"assign",id:a.id,done:!!(a.done||a.submitted),allDay:!!a.allDay,a});
   for(const e of Object.values(ST.events)) if(!e.courseId||!ST.courses[e.courseId]?.archived)
     out.push({t:e.start,title:e.title,courseId:e.courseId,kind:"event",id:e.id,e,allDay:!!e.allDay});
   return out.sort((x,y)=>(x.allDay?0:1)-(y.allDay?0:1)||x.t-y.t);
@@ -1228,6 +1243,172 @@ function exportIcs(){
   L.push("END:VCALENDAR");
   const u=URL.createObjectURL(new Blob([L.join("\r\n")+"\r\n"],{type:"text/calendar"})), a=document.createElement("a"); a.href=u; a.download="recall-notes.ics"; a.click(); setTimeout(()=>URL.revokeObjectURL(u),5000);
   toast("Calendar file downloaded. Open it to add the dates to your calendar app.");
+}
+
+/* ---------- Syllabus scanner: find dated assignments, quizzes and tests ---------- */
+const TYPE_LABEL={assignment:"Assignment",quiz:"Quiz",test:"Test",exam:"Exam",project:"Project",lab:"Lab",paper:"Paper"};
+const SYL_RE=/syllab|course\s*(outline|schedule|calendar)|schedule|outline/i;
+const MON="(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+const monIdx=w=>["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(w.slice(0,3).toLowerCase());
+const DATE_PATS=[
+  [new RegExp(`\\b${MON}\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?!\\d|:\\d)(?:,?\\s*(20\\d{2}))?`,"gi"),m=>[monIdx(m[1]),+m[2],m[3]?+m[3]:0]],
+  [new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${MON}\\b\\.?(?:,?\\s*(20\\d{2}))?`,"gi"),m=>[monIdx(m[2]),+m[1],m[3]?+m[3]:0]],
+  [/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g,m=>[+m[2]-1,+m[3],+m[1]]],
+  [/(?<![\d/.])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d/%])/g,m=>[+m[1]-1,+m[2],m[3]?(m[3].length===2?2000+ +m[3]:+m[3]):0]]
+];
+const WEEKDAY=/\b(mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?\b\.?,?/gi;
+const TIME_RE=/\b(?:at\s+|by\s+|@\s*)?(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)|\b(?:at\s+|by\s+)?(noon|midnight)\b/i;
+const SKIP_RE=/\b(no class(es)?|holiday|spring break|fall break|thanksgiving|reading day|office hours|last day to (add|drop|withdraw)|withdraw(al)? deadline|add\/drop|grades? (are )?due|instructor)\b/i;
+function findDates(line){
+  const out=[];
+  for(const [re,f] of DATE_PATS){ re.lastIndex=0; let m; while((m=re.exec(line))){ const [mo,d,y]=f(m); if(mo>=0&&mo<12&&d>=1&&d<=31&&!out.some(o=>m.index<o.end&&o.start<m.index+m[0].length)) out.push({mo,d,y,start:m.index,end:m.index+m[0].length,str:m[0]}); } }
+  return out.sort((a,b)=>a.start-b.start);
+}
+function itemType(s){
+  const l=" "+s.toLowerCase()+" ";
+  if(/\b(final exams?|finals|mid-?terms?|exams?|examination)\b/.test(l)) return "exam";
+  if(/\b(tests?)\b/.test(l)&&!/\b(test (tube|case)|t-test)\b/.test(l)) return "test";
+  if(/\bquiz(zes)?\b/.test(l)) return "quiz";
+  if(/\b(projects?|presentations?|capstone)\b/.test(l)) return "project";
+  if(/\b(due|deadline|submit|turn in|hand in|assignments?|homework|hw\s?#?\d+|problem sets?|p-?sets?|ps\s?#?\d+|essays?|write-?ups?)\b/.test(l)) return "assignment";
+  if(/\b(lab(oratory)?\s*(report|#?\d+))\b/.test(l)) return "lab";
+  if(/\b(papers?|reports?|drafts?|reflections?|journals?|worksheets?|portfolios?|discussion posts?)\s*#?\d*\b/.test(l)&&/\b(due|\d)\b/.test(l)) return "paper";
+  return null;
+}
+function cleanItem(seg){
+  let t=seg;
+  for(const [re] of DATE_PATS){ re.lastIndex=0; t=t.replace(re," "); }
+  t=t.replace(WEEKDAY," ").replace(new RegExp(TIME_RE.source,"gi")," ").replace(/\bweek\s*\d{1,2}\b/gi," ").replace(/\(\s*\d+(\.\d+)?\s*%\s*\)|\b\d+(\.\d+)?\s*%/g," ")
+   .replace(/\b(is |are )?(due|deadline)( on| by| date| at)?\b:?/gi," ").replace(/\s*\|\s*/g," · ").replace(/\s+/g," ").replace(/\s*([,·])(?:\s*[,·])+/g,"$1").replace(/\(\s*\)|\s+([,.)])/g,"$1")
+   .replace(/^[\s·\-–—:,.;*•▪●#>|]+|[\s·\-–—:,;*•▪●|]+$/g,"").trim();
+  if(t.length>100) t=t.slice(0,97).replace(/\s+\S*$/,"")+"…";
+  return t?t[0].toUpperCase()+t.slice(1):"";
+}
+function scanSyllabus(text,opts={}){
+  const lines=String(text||"").split(/\n+/).map(l=>l.replace(/\s+/g," ").trim()).filter(Boolean);
+  const years=(text.match(/\b20\d{2}\b/g)||[]).map(Number).filter(y=>Math.abs(y-new Date().getFullYear())<=1), freq={};
+  years.forEach(y=>freq[y]=(freq[y]||0)+1);
+  const refYear=+Object.keys(freq).sort((a,b)=>freq[b]-freq[a])[0]||new Date().getFullYear();
+  const termStart=opts.termStart?new Date(opts.termStart+"T00:00").getTime():0;
+  let prev=0, ctx=null; const items=[];
+  const mkDate=(dt,line)=>{
+    let y=dt.y||refYear, t=new Date(y,dt.mo,dt.d).getTime();
+    if(!dt.y&&prev&&t<prev-60*DAY){ y++; t=new Date(y,dt.mo,dt.d).getTime(); }
+    if(!dt.y&&!years.length&&t<Date.now()-200*DAY){ y++; t=new Date(y,dt.mo,dt.d).getTime(); }
+    return t;
+  };
+  lines.forEach((line,i)=>{
+    if(line.length>400) return;
+    const ds=findDates(line); let base=null, guessed=false;
+    if(ds.length){ base=mkDate(ds[0],line); prev=Math.max(prev,base); ctx={t:base,i}; }
+    else{
+      const wk=/\bweek\s*(\d{1,2})\b/i.exec(line);
+      if(wk&&termStart){ base=termStart+(+wk[1]-1)*7*DAY; ctx={t:base,i}; guessed="week"; }
+      else if(ctx&&i-ctx.i<=3){ base=ctx.t; guessed="row"; }
+    }
+    if(base===null||SKIP_RE.test(line)) return;
+    const tm=TIME_RE.exec(line);
+    let h=null,mi=0; if(tm){ if(tm[4]){ h=tm[4].toLowerCase()==="noon"?12:23; mi=tm[4].toLowerCase()==="noon"?0:59; } else { h=+tm[1]%12+(/p/i.test(tm[3])?12:0); mi=+(tm[2]||0); } }
+    // A row can hold more than one item ("Quiz 3; HW 4 due"): split it up
+    const segs=line.split(/\s*(?:;|\s\|\s|\s\/\s|•|\s&\s|\band\b(?=\s+(?:quiz|test|exam|hw|homework|lab|essay|paper|project)))\s*/i).filter(Boolean);
+    for(const seg of (segs.length>1?segs:[line])){
+      const type=itemType(seg); if(!type) continue;
+      let name=cleanItem(seg); if(!name||/^\W*$/.test(name)) name=TYPE_LABEL[type];
+      if(name.length<3&&!/\d/.test(name)) name=TYPE_LABEL[type]+" "+name;
+      const sd=findDates(seg); let t=sd.length?mkDate(sd[0],seg):base;
+      const d=new Date(t); let allDay=h===null;
+      if(!allDay) d.setHours(h,mi,0,0); else d.setHours(type==="assignment"||type==="paper"||type==="lab"?23:9, type==="assignment"||type==="paper"||type==="lab"?59:0,0,0);
+      if(allDay&&(type==="assignment"||type==="paper"||type==="lab")) allDay=false;
+      items.push({type:type==="paper"||type==="lab"?(type==="lab"?"lab":"assignment"):type,name,due:d.getTime(),allDay,src:trimTo(line,160),guessed});
+    }
+  });
+  const seen=new Set();
+  return items.filter(it=>{ const k=it.type+"|"+dkey(new Date(it.due))+"|"+it.name.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+}
+const SCAN={};
+async function scanText(m){
+  let t=TEXT[m.id];
+  if(!t&&m.type==="file"){ const b=await DB.get("files",m.id).catch(()=>null); if(b){ await extract(m,b); t=TEXT[m.id]; } }
+  if(!t) return "";
+  if(t.slides) return t.slides.map(s=>[s.title,...s.lines].filter(Boolean).join("\n")).join("\n");
+  return t.md?t.md.replace(/^#+\s|^- /gm,""):t.text||htmlText(t.html||"");
+}
+async function scanView(){
+  const cid=VIEW.id&&ST.courses[VIEW.id]?VIEW.id:"", c=ST.courses[cid], mid=VIEW.q.get("m");
+  const st=SCAN[cid]||(SCAN[cid]={items:null,source:"",termStart:""});
+  if(mid&&st.mid!==mid&&ST.materials[mid]){ st.mid=mid; st.source=ST.materials[mid].name; st.text=await scanText(ST.materials[mid]); st.items=scanSyllabus(st.text,{termStart:st.termStart}); markDupes(st,cid); if(VIEW.name!=="scan") return; }
+  const mats=c?Object.values(ST.materials).filter(m=>m.courseId===c.id&&m.type!=="link"&&(TEXT[m.id]||m.status==="saved")).sort((a,b)=>(SYL_RE.test(b.name)-SYL_RE.test(a.name))||a.name.localeCompare(b.name)):[];
+  const opts=courses().map(x=>`<option value="${x.id}" ${x.id===cid?"selected":""}>${esc(x.name)}</option>`).join("");
+  const its=st.items;
+  main.innerHTML=`<div class="crumb"><a href="#/">Home</a><span>›</span>${c?`<a href="#/c/${c.id}/assignments">${esc(c.name)}</a><span>›</span>`:""}</div>
+  <div class="sec-top"><div><p class="eyebrow">Syllabus scanner</p><h2>${its?`Found ${its.length} item${its.length===1?"":"s"}${st.source?` in ${esc(trimTo(st.source,50))}`:""}`:"Import due dates from a syllabus"}</h2></div></div>
+  ${its?"":`<section class="card scan-src">
+    <label class="form" style="gap:6px"><b style="font-size:.88rem">Class</b><select class="in" id="scCourse" style="max-width:420px">${opts?`<option value="" ${cid?"":"selected"} disabled>Choose a class</option>${opts}`:`<option value="">Add a class first</option>`}</select></label>
+    <div class="drop" id="scDrop"><button class="btn primary small" data-act="scPick" ${cid?"":"disabled"}>Choose syllabus file</button><span class="hint">PDF, Word (.docx), text or web page. Or drop it here. Scanned images can't be read.</span><input type="file" id="scFile" class="vh" accept=".pdf,.docx,.txt,.md,.html,.htm,.pptx" tabindex="-1" aria-hidden="true"></div>
+    ${mats.length?`<div><p class="hint" style="margin-bottom:8px">Or scan a file already in this class:</p><div class="chips">${mats.slice(0,12).map(m=>`<a class="chip" href="#/scan/${cid}?m=${m.id}">${SYL_RE.test(m.name)?"⭐ ":""}${esc(trimTo(m.name,40))}</a>`).join("")}</div></div>`:""}
+    <details class="more"><summary>Paste the schedule instead</summary><div class="form" style="margin-top:10px"><textarea class="in" id="scPaste" rows="7" placeholder="Sep 12 – Quiz 1 (chapters 1–2)&#10;Sep 19 – Problem set 2 due 11:59 pm&#10;Oct 15 – Midterm exam"></textarea><div class="btnrow"><button class="btn small" data-act="scPaste" ${cid?"":"disabled"}>Scan text</button></div></div></details>
+    <label class="form" style="gap:6px"><b style="font-size:.88rem">First day of class <small style="font-weight:400;color:var(--muted)">Optional. Lets “Week 5” rows get a date when the syllabus doesn't list one</small></b><input class="in" type="date" id="scTerm" value="${esc(st.termStart)}" style="max-width:220px"></label>
+    <p class="hint">Scanning happens on this device. Nothing is sent anywhere.</p></section>`}
+  ${its?`<section class="card" style="gap:12px">
+    ${its.length?`<div class="scan-head"><label class="cb-all"><input type="checkbox" class="ck2" id="scAll" ${its.every(x=>x.on)?"checked":""}> Select all</label><span class="hint">Check the dates and names, untick anything that isn't right, then import.</span></div>
+    <div class="scan-list">${its.map((it,i)=>`<div class="scan-row${it.on?"":" off"}" data-i="${i}">
+      <input type="checkbox" class="ck2" data-f="on" ${it.on?"checked":""} aria-label="Import ${esc(it.name)}">
+      <select class="in sm" data-f="type" aria-label="Type">${Object.keys(TYPE_LABEL).filter(k=>k!=="paper").map(k=>`<option value="${k}" ${it.type===k?"selected":""}>${TYPE_LABEL[k]}</option>`).join("")}</select>
+      <input class="in sm" data-f="name" value="${esc(it.name)}" aria-label="Name">
+      <input class="in sm" type="date" data-f="date" value="${dkey(new Date(it.due))}" aria-label="Date">
+      <input class="in sm" type="time" data-f="time" value="${it.allDay?"":new Date(it.due).toTimeString().slice(0,5)}" aria-label="Time (optional)">
+      <span class="scan-src-line">${it.dupe?`<span class="tag warn">Already on Moodle</span> `:""}${it.guessed==="row"?`<span class="tag warn">Date from row above</span> `:it.guessed==="week"?`<span class="tag warn">Date from week number</span> `:""}<span>“${esc(it.src)}”</span></span>
+    </div>`).join("")}</div>`:`<p class="empty">No dated assignments, quizzes or tests were found. If the schedule lists weeks instead of dates, go back and enter the first day of class. You can also paste just the schedule part.</p>`}
+    <div class="btnrow"><button class="btn primary" data-act="scImport" ${its.some(x=>x.on)?"":"disabled"}>Import ${its.filter(x=>x.on).length} item${its.filter(x=>x.on).length===1?"":"s"}</button><button class="btn" data-act="scAdd">+ Add a row</button><button class="btn ghost" data-act="scReset">Scan something else</button></div></section>`:""}`;
+  if(!its){
+    const sel=$("scCourse"); sel.onchange=()=>location.hash="#/scan/"+sel.value;
+    $("scTerm").onchange=e=>{ st.termStart=e.target.value; };
+    const d=$("scDrop"), inp=$("scFile");
+    inp.onchange=()=>{ if(inp.files[0]) scanFile(cid,inp.files[0]); };
+    d.ondragover=e=>{ e.preventDefault(); d.classList.add("over"); }; d.ondragleave=()=>d.classList.remove("over");
+    d.ondrop=e=>{ e.preventDefault(); d.classList.remove("over"); if(cid&&e.dataTransfer.files[0]) scanFile(cid,e.dataTransfer.files[0]); else if(!cid) toast("Choose a class first"); };
+  } else {
+    main.querySelectorAll(".scan-row").forEach(r=>{ const it=its[+r.dataset.i];
+      r.addEventListener("input",e=>{ const f=e.target.dataset.f; if(!f) return;
+        if(f==="on"){ it.on=e.target.checked; r.classList.toggle("off",!it.on); updImp(); }
+        else if(f==="type") it.type=e.target.value; else if(f==="name") it.name=e.target.value;
+        else if(f==="date"||f==="time"){ const dv=r.querySelector('[data-f="date"]').value, tv=r.querySelector('[data-f="time"]').value; if(dv){ it.due=new Date(`${dv}T${tv||"09:00"}`).getTime(); it.allDay=!tv; } } }); });
+    const all=$("scAll"); if(all) all.onchange=()=>{ its.forEach(x=>x.on=all.checked); main.querySelectorAll('[data-f="on"]').forEach(x=>{ x.checked=all.checked; x.closest(".scan-row").classList.toggle("off",!all.checked); }); updImp(); };
+  }
+  function updImp(){ const n=its.filter(x=>x.on).length, b=main.querySelector('[data-act="scImport"]'); if(b){ b.disabled=!n; b.textContent=`Import ${n} item${n===1?"":"s"}`; } }
+}
+function markDupes(st,cid){
+  const words=s=>new Set(s.toLowerCase().split(/\W+/).filter(w=>w.length>2&&!["due","the","and"].includes(w)));
+  const existing=Object.values(ST.assignments).filter(a=>a.courseId===cid);
+  for(const it of st.items){
+    const w=words(it.name);
+    it.dupe=existing.some(a=>a.due&&Math.abs(dayStart(a.due)-dayStart(it.due))<=DAY&&([...words(a.name)].some(x=>w.has(x))||a.type===it.type));
+    it.on=!it.dupe&&it.due>Date.now()-120*DAY;
+  }
+}
+async function scanFile(cid,f){
+  const st=SCAN[cid]; toast("Reading "+f.name+"…");
+  const c=ST.courses[cid];
+  const m={id:"u"+uid(),courseId:cid,source:"upload",type:"file",name:f.name.replace(/\.[a-z0-9]{2,5}$/i,""),file:f.name,size:f.size,mime:f.type,addedAt:Date.now(),sectionId:(c.sections||[]).slice().sort((a,b)=>a.num-b.num)[0]?.id||null,kind:"notes",kindSet:true,status:"remote"};
+  ST.materials[m.id]=m;
+  try{ await DB.put("files",m.id,f); m.status="saved"; m.savedMtime=Date.now(); await extract(m,f); }catch(e){ m.readErr=e.message; }
+  save();
+  const text=await scanText(m);
+  if(!text.trim()){ toast(m.readErr||"Couldn't find any text in that file. If it's a scan or photo, paste the schedule instead."); return; }
+  st.mid=m.id; st.source=f.name; st.text=text; st.items=scanSyllabus(text,{termStart:st.termStart}); markDupes(st,cid);
+  toast("Saved the syllabus to this class's files"); render(true);
+}
+function scanAction(a){
+  const cid=VIEW.id, st=SCAN[cid]; if(!st&&a!=="scPick") return;
+  if(a==="scPick") $("scFile").click();
+  else if(a==="scPaste"){ const t=$("scPaste").value; if(!t.trim()) return; st.mid=null; st.source="pasted text"; st.text=t; st.items=scanSyllabus(t,{termStart:st.termStart}); markDupes(st,cid); render(true); }
+  else if(a==="scReset"){ delete SCAN[cid]; location.hash="#/scan/"+cid; if(!VIEW.q.get("m")) render(true); }
+  else if(a==="scAdd"){ st.items.push({type:"assignment",name:"",due:new Date(new Date().setHours(23,59,0,0)).getTime(),allDay:false,src:"Added by you",on:true}); render(true); main.querySelector(".scan-row:last-child [data-f=name]")?.focus(); }
+  else if(a==="scImport"){
+    const pick=st.items.filter(x=>x.on&&x.name.trim()&&x.due); let n=0;
+    for(const it of pick){ const id="s"+uid()+n++; ST.assignments[id]={id,courseId:cid,name:it.name.trim(),due:it.due,allDay:!!it.allDay,type:it.type,source:"syllabus",fromMat:st.mid||null,intro:""}; }
+    save(); delete SCAN[cid]; toast(`Imported ${pick.length} item${pick.length===1?"":"s"}. They're in your calendar now.`); location.hash="#/c/"+cid+"/assignments";
+  }
 }
 
 /* ---------- Connect ---------- */
@@ -1402,6 +1583,7 @@ document.addEventListener("click",async e=>{
   const a=t.dataset.act, id=t.dataset.id;
   if(a!=="courseMenu"&&a!=="matMenu"&&!t.closest(".menu-pop")) document.querySelectorAll(".menu-pop").forEach(p=>p.hidden=true);
   if(a==="sync") syncAll();
+  else if(a.startsWith("sc")) scanAction(a);
   else if(a==="ics") exportIcs();
   else if(a==="delEvent"){ delete ST.events[id]; save(); render(); toast("Event deleted"); }
   else if(a==="syncOne") syncAll([id]);
